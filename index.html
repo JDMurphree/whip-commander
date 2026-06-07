@@ -242,6 +242,18 @@ input:checked+.tslider::before{transform:translateX(23px);}
 }
 .toast.show{opacity:1;}
 
+/* ── Disconnected overlay ── */
+.disco-wrap{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#discoOverlay{
+  position:absolute;inset:0;z-index:50;
+  background:rgba(9,9,9,.82);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;backdrop-filter:blur(2px);
+}
+#discoOverlay .disco-icon{font-size:48px;opacity:.6;}
+#discoOverlay .disco-msg{font-size:15px;font-weight:700;color:var(--text2);text-align:center;line-height:1.5;}
+#discoOverlay .disco-hint{font-size:12px;color:var(--text3);text-align:center;}
+
 /* ── Utility ── */
 .tbtn{padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer;width:100%;}
 .tbtn:active{background:var(--accent);color:#fff;}
@@ -268,6 +280,14 @@ input:checked+.tslider::before{transform:translateX(23px);}
     <div class="dot" id="dot"></div>
     <span id="statusTxt">Not connected — tap Connect and pick your device</span>
   </div>
+
+  <!-- Disconnected overlay + content wrapper -->
+  <div class="disco-wrap">
+    <div id="discoOverlay">
+      <div class="disco-icon">📡</div>
+      <div class="disco-msg">Not Connected</div>
+      <div class="disco-hint">Tap Connect above to pair your Rhino Lights</div>
+    </div>
 
   <!-- Main content -->
   <div class="content">
@@ -412,6 +432,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
       <span class="ti">⚙️</span>Settings
     </button>
   </div>
+  </div><!-- /disco-wrap -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -478,10 +499,7 @@ function setConn(state, name='') {
 }
 
 function setControlsEnabled(on) {
-  const content = document.getElementById('mainContent');
-  content.style.pointerEvents = on ? '' : 'none';
-  content.style.opacity      = on ? '' : '0.4';
-  content.style.filter       = on ? '' : 'grayscale(0.5)';
+  document.getElementById('discoOverlay').style.display = on ? 'none' : 'flex';
 }
 
 async function send(b1,b2,b3,cmd) {
