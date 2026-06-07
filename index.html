@@ -318,7 +318,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
         </div>
         <div class="slider-row">
           <span class="slider-label">Duration</span>
-          <input type="range" id="durSlider" min="150" max="5000" step="50" value="500" oninput="onDur()">
+          <input type="range" id="durSlider" min="300" max="5000" step="50" value="500" oninput="onDur()">
           <span class="slider-val" id="durVal">0.5s</span>
         </div>
       </div>
@@ -452,6 +452,18 @@ async function send(b1,b2,b3,cmd) {
     else
       await bleChar.writeValue(data);
   } catch(e) { console.error('BLE write:',e); }
+}
+
+// Fire-and-forget version for pattern use — never blocks the UI
+function sendFast(b1,b2,b3,cmd) {
+  if (!bleChar) return;
+  const data = new Uint8Array([b1,b2,b3,cmd]);
+  try {
+    if (bleChar.properties?.writeWithoutResponse)
+      bleChar.writeValueWithoutResponse(data).catch(()=>{});
+    else
+      bleChar.writeValue(data).catch(()=>{});
+  } catch(e) {}
 }
 
 // ─── COLOR ORDER ──────────────────────────────────────────────────────────────
@@ -607,13 +619,13 @@ function nudgeMode(delta) {
 // ─── PATTERNS ─────────────────────────────────────────────────────────────────
 const PRESETS = [
   {name:'🇺🇸 Patriotic', colors:['#ff0000','#ffffff','#0033cc'], dur:500},
-  {name:'🚨 Police',     colors:['#ff0000','#0033ff'],            dur:250},
-  {name:'🎃 Halloween',  colors:['#ff6600','#8800cc','#000000'],  dur:400},
-  {name:'🎄 Christmas',  colors:['#ff0000','#00bb00'],             dur:400},
-  {name:'🌈 Full Rainbow',colors:['#ff0000','#ff7700','#ffff00','#00ff00','#0000ff','#8800ff'], dur:250},
-  {name:'🔥 Fire Flash',  colors:['#ff0000','#ff4400','#ff8800','#ffcc00'], dur:150},
-  {name:'🩵 Ice & Fire', colors:['#ff2200','#0088ff'],            dur:350},
-  {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:300},
+  {name:'🚨 Police',     colors:['#ff0000','#0033ff'],            dur:400},
+  {name:'🎃 Halloween',  colors:['#ff6600','#8800cc','#000000'],  dur:450},
+  {name:'🎄 Christmas',  colors:['#ff0000','#00bb00'],             dur:450},
+  {name:'🌈 Full Rainbow',colors:['#ff0000','#ff7700','#ffff00','#00ff00','#0000ff','#8800ff'], dur:400},
+  {name:'🔥 Fire Flash',  colors:['#ff0000','#ff4400','#ff8800','#ffcc00'], dur:350},
+  {name:'🩵 Ice & Fire', colors:['#ff2200','#0088ff'],            dur:400},
+  {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:400},
 ];
 
 let sequence=[], patTimer=null, patPlaying=false, patIdx=0;
@@ -674,19 +686,26 @@ function togglePattern() {
 
 function startPattern() {
   if(!sequence.length){ toast('Add at least one color first'); return; }
+  stopPattern(); // clear any existing timer first
   patPlaying=true; patIdx=0;
   document.getElementById('playBtn').textContent='⏹ Stop';
   document.getElementById('playBtn').className='play-btn playing';
-  const dur=+document.getElementById('durSlider').value;
-  sendColor(sequence[0].hex); patIdx=1;
-  patTimer=setInterval(()=>{
-    sendColor(sequence[patIdx%sequence.length].hex);
-    patIdx++;
-  }, dur);
+  runPatternStep();
+}
+
+function runPatternStep() {
+  if(!patPlaying) return;
+  const col = sequence[patIdx % sequence.length];
+  const [r,g,b] = hexRgb(col.hex);
+  const [b1,b2,b3] = reorder(r,g,b);
+  sendFast(b1,b2,b3, CMD.COLOR); // fire-and-forget, never blocks
+  patIdx++;
+  const dur = Math.max(300, +document.getElementById('durSlider').value);
+  patTimer = setTimeout(runPatternStep, dur);
 }
 
 function stopPattern() {
-  clearInterval(patTimer); patTimer=null; patPlaying=false;
+  clearTimeout(patTimer); patTimer=null; patPlaying=false;
   const btn=document.getElementById('playBtn');
   if(btn){ btn.textContent='▶ Play Sequence'; btn.className='play-btn idle'; }
 }
