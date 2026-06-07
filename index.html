@@ -363,6 +363,12 @@ input:checked+.tslider::before{transform:translateX(23px);}
         </div>
       </div>
 
+      <div class="sec-label" style="margin-top:16px;">Chase Effect</div>
+      <div class="card" style="padding:10px 12px 12px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">How colors move through the strip</div>
+        <div class="order-grid" id="chaseStyleBtns"></div>
+      </div>
+
       <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play</button>
       <button class="btn-clear" onclick="clearSequence()">Clear Sequence</button>
 
@@ -725,7 +731,9 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  sendMode(mode);
+  // Send current color first so color-responsive modes use it
+  sendColor(document.getElementById('colorPicker').value);
+  setTimeout(()=>sendMode(mode), 80);
   stopPattern();
   // update now-playing bar
   const bar=document.getElementById('fxNow');
@@ -862,6 +870,8 @@ function togglePattern() {
 function startPattern() {
   if(!sequence.length){ toast('Add at least one color first'); return; }
   stopPattern();
+  // If no chase mode, stop any hardware effect so COLOR commands take effect
+  if(chaseStyle.mode === null) sendMode(0);
   patPlaying=true; patIdx=0;
   document.getElementById('playBtn').textContent='⏹ Stop';
   document.getElementById('playBtn').className='play-btn playing';
@@ -874,9 +884,13 @@ async function runPatternStep() {
   const [r,g,b] = hexRgb(col.hex);
   const [b1,b2,b3] = reorder(r,g,b);
   await send(b1,b2,b3, CMD.COLOR);
-  if(!patPlaying) return; // re-check after await — stop is immediate
+  // Re-send the pattern's chase mode so each color gets its own animated pass
+  if(chaseStyle.mode !== null) setTimeout(()=>sendMode(chaseStyle.mode), 80);
+  if(!patPlaying) return;
   patIdx++;
-  const dur = Math.max(300, +document.getElementById('durSlider').value);
+  // Chase modes need ≥1s per color to complete a full animation pass
+  const minDur = chaseStyle.mode !== null ? 1000 : 300;
+  const dur = Math.max(minDur, +document.getElementById('durSlider').value);
   patTimer = setTimeout(runPatternStep, dur);
 }
 
@@ -947,6 +961,7 @@ function toast(msg,ms=1800) {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 buildQuickColors();
 buildEffects();
+buildChaseStyles();
 buildPresets();
 buildOrderBtns();
 onDur();
