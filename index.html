@@ -133,15 +133,24 @@ input[type=range]::-webkit-slider-thumb{
 .pill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 
 /* ── Effects grid ── */
-.fx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.fx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
 .fx-card{
-  background:var(--surface2);border-radius:10px;padding:12px;
+  background:var(--surface2);border-radius:10px;padding:10px 10px 8px;
   border:1.5px solid var(--border);cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;gap:3px;
 }
 .fx-card:active{transform:scale(.96);}
-.fx-card.active{border-color:var(--accent);background:rgba(255,106,0,.1);}
-.fx-name{font-size:13px;font-weight:700;margin-bottom:3px;}
+.fx-card.active{border-color:var(--accent);background:rgba(255,106,0,.12);box-shadow:0 0 10px rgba(255,106,0,.15);}
+.fx-icon{font-size:18px;line-height:1;}
+.fx-name{font-size:12px;font-weight:700;}
 .fx-sub{font-size:10px;color:var(--text2);}
+.fx-now{
+  background:var(--surface);border-radius:10px;padding:10px 14px;
+  border:1px solid var(--border);margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;
+}
+.fx-now-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.fx-now-name{font-size:14px;font-weight:800;color:var(--accent);}
 
 /* ── Mode browser ── */
 .mode-browser{display:flex;align-items:center;gap:12px;}
@@ -292,6 +301,14 @@ input:checked+.tslider::before{transform:translateX(23px);}
 
     <!-- ══ EFFECTS tab ══ -->
     <div class="tab-content" id="tab-effects">
+      <div class="fx-now" id="fxNow" style="display:none;">
+        <div>
+          <div class="fx-now-label">Now Playing</div>
+          <div class="fx-now-name" id="fxNowName">—</div>
+        </div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text2);" id="fxNowMode"></div>
+      </div>
+
       <div class="pills" id="catPills"></div>
 
       <div class="fx-grid" id="fxGrid"></div>
@@ -587,33 +604,78 @@ async function resetBrightness() {
 
 // ─── EFFECTS ──────────────────────────────────────────────────────────────────
 const EFFECTS = [
-  // Chase
-  {name:'Rainbow Chase', mode:1,  cat:'Chase',   icon:'🌈'},
-  {name:'Color Comet',   mode:25, cat:'Chase',   icon:'☄️'},
-  {name:'Running',       mode:30, cat:'Chase',   icon:'▶'},
-  {name:'Meteor',        mode:38, cat:'Chase',   icon:'💫'},
-  {name:'Theater Chase', mode:43, cat:'Chase',   icon:'🎭'},
-  // Breathe
-  {name:'Breathe',       mode:6,  cat:'Breathe', icon:'◎'},
-  {name:'Color Pulse',   mode:7,  cat:'Breathe', icon:'🫀'},
-  {name:'Heartbeat',     mode:60, cat:'Breathe', icon:'💗'},
-  {name:'Ocean Wave',    mode:65, cat:'Breathe', icon:'🌊'},
-  // Flash
-  {name:'Strobe',        mode:10, cat:'Flash',   icon:'⚡'},
-  {name:'Police',        mode:35, cat:'Flash',   icon:'🚨'},
-  {name:'Lightning',     mode:40, cat:'Flash',   icon:'🌩️'},
-  {name:'Disco',         mode:50, cat:'Flash',   icon:'🪩'},
-  // Ambient
-  {name:'Fire',          mode:45, cat:'Ambient', icon:'🔥'},
-  {name:'Twinkle',       mode:52, cat:'Ambient', icon:'✦'},
-  {name:'Stars',         mode:55, cat:'Ambient', icon:'⭐'},
-  {name:'Lava',          mode:70, cat:'Ambient', icon:'🌋'},
-  {name:'Plasma',        mode:75, cat:'Ambient', icon:'🔵'},
-  // Rainbow
-  {name:'Rainbow',       mode:2,  cat:'Rainbow', icon:'🎨'},
-  {name:'Rainbow Spin',  mode:3,  cat:'Rainbow', icon:'🔄'},
-  {name:'Color Wipe',    mode:15, cat:'Rainbow', icon:'🖌'},
-  {name:'Gradient',      mode:20, cat:'Rainbow', icon:'🌅'},
+  // ── Chase ──
+  {name:'Rainbow Chase',   mode:1,   cat:'Chase',   icon:'🌈'},
+  {name:'Color Chase',     mode:17,  cat:'Chase',   icon:'➡️'},
+  {name:'Dual Chase',      mode:18,  cat:'Chase',   icon:'↔️'},
+  {name:'Comet',           mode:25,  cat:'Chase',   icon:'☄️'},
+  {name:'Comet Trail',     mode:26,  cat:'Chase',   icon:'💫'},
+  {name:'Running Light',   mode:30,  cat:'Chase',   icon:'▶'},
+  {name:'Running Tri',     mode:31,  cat:'Chase',   icon:'▶▶'},
+  {name:'Meteor',          mode:38,  cat:'Chase',   icon:'🌠'},
+  {name:'Theater Chase',   mode:43,  cat:'Chase',   icon:'🎭'},
+  {name:'Scanner',         mode:44,  cat:'Chase',   icon:'📡'},
+  {name:'Larson',          mode:46,  cat:'Chase',   icon:'👁️'},
+  {name:'Juggle',          mode:82,  cat:'Chase',   icon:'🤹'},
+  {name:'Wipe In',         mode:90,  cat:'Chase',   icon:'⬆'},
+  {name:'Wipe Out',        mode:91,  cat:'Chase',   icon:'⬇'},
+  // ── Breathe ──
+  {name:'Breathe',         mode:6,   cat:'Breathe', icon:'◎'},
+  {name:'Color Pulse',     mode:7,   cat:'Breathe', icon:'💓'},
+  {name:'Fade In/Out',     mode:8,   cat:'Breathe', icon:'🔆'},
+  {name:'Fade Cycle',      mode:9,   cat:'Breathe', icon:'🔄'},
+  {name:'Heartbeat',       mode:60,  cat:'Breathe', icon:'❤️'},
+  {name:'Ocean Wave',      mode:65,  cat:'Breathe', icon:'🌊'},
+  {name:'Breathe Slow',    mode:66,  cat:'Breathe', icon:'🌬️'},
+  {name:'Sine Wave',       mode:78,  cat:'Breathe', icon:'〜'},
+  {name:'Ripple',          mode:79,  cat:'Breathe', icon:'💧'},
+  // ── Flash ──
+  {name:'Strobe',          mode:10,  cat:'Flash',   icon:'⚡'},
+  {name:'Strobe Rainbow',  mode:11,  cat:'Flash',   icon:'🌈⚡'},
+  {name:'Multi Strobe',    mode:12,  cat:'Flash',   icon:'⚡⚡'},
+  {name:'Blink',           mode:13,  cat:'Flash',   icon:'💡'},
+  {name:'Blink Rainbow',   mode:14,  cat:'Flash',   icon:'🌈💡'},
+  {name:'Police',          mode:35,  cat:'Flash',   icon:'🚨'},
+  {name:'Police All',      mode:36,  cat:'Flash',   icon:'🚔'},
+  {name:'Two Dots',        mode:37,  cat:'Flash',   icon:'🔴🔵'},
+  {name:'Lightning',       mode:40,  cat:'Flash',   icon:'🌩️'},
+  {name:'Disco',           mode:50,  cat:'Flash',   icon:'🪩'},
+  {name:'Random Flash',    mode:51,  cat:'Flash',   icon:'🎆'},
+  {name:'Hyper Strobe',    mode:89,  cat:'Flash',   icon:'⚡⚡⚡'},
+  // ── Ambient ──
+  {name:'Fire',            mode:45,  cat:'Ambient', icon:'🔥'},
+  {name:'Fire 2',          mode:47,  cat:'Ambient', icon:'🔥🔥'},
+  {name:'Twinkle',         mode:52,  cat:'Ambient', icon:'✦'},
+  {name:'Twinkle Random',  mode:53,  cat:'Ambient', icon:'✧'},
+  {name:'Twinkle Fade',    mode:54,  cat:'Ambient', icon:'✦✦'},
+  {name:'Stars',           mode:55,  cat:'Ambient', icon:'⭐'},
+  {name:'Sparkle',         mode:56,  cat:'Ambient', icon:'✨'},
+  {name:'Snow Sparkle',    mode:57,  cat:'Ambient', icon:'❄️'},
+  {name:'Lava',            mode:70,  cat:'Ambient', icon:'🌋'},
+  {name:'Plasma',          mode:75,  cat:'Ambient', icon:'🟣'},
+  {name:'Noise',           mode:76,  cat:'Ambient', icon:'🌫️'},
+  {name:'Colorful',        mode:77,  cat:'Ambient', icon:'🎨'},
+  {name:'Aurora',          mode:83,  cat:'Ambient', icon:'🌌'},
+  {name:'Glitter',         mode:84,  cat:'Ambient', icon:'🌟'},
+  // ── Rainbow ──
+  {name:'Rainbow',         mode:2,   cat:'Rainbow', icon:'🌈'},
+  {name:'Rainbow Spin',    mode:3,   cat:'Rainbow', icon:'🔄'},
+  {name:'Rainbow Move',    mode:4,   cat:'Rainbow', icon:'➡🌈'},
+  {name:'Rainbow Cycle',   mode:5,   cat:'Rainbow', icon:'♾️'},
+  {name:'Color Wipe',      mode:15,  cat:'Rainbow', icon:'🖌️'},
+  {name:'Color Wipe Inv',  mode:16,  cat:'Rainbow', icon:'🖌🔄'},
+  {name:'Gradient',        mode:20,  cat:'Rainbow', icon:'🌅'},
+  {name:'Gradient Move',   mode:21,  cat:'Rainbow', icon:'🌄'},
+  {name:'Palette',         mode:22,  cat:'Rainbow', icon:'🎭'},
+  {name:'Palette Cycle',   mode:23,  cat:'Rainbow', icon:'🎨🔄'},
+  {name:'Bands',           mode:80,  cat:'Rainbow', icon:'📊'},
+  {name:'Colorloop',       mode:85,  cat:'Rainbow', icon:'🔁'},
+  // ── Solid ──
+  {name:'Solid Color',     mode:0,   cat:'Solid',   icon:'⬛'},
+  {name:'Static Gradient', mode:19,  cat:'Solid',   icon:'🟥🟧'},
+  {name:'Two Colors',      mode:32,  cat:'Solid',   icon:'🔴🔵'},
+  {name:'Three Colors',    mode:33,  cat:'Solid',   icon:'🔴🟢🔵'},
+  {name:'Custom Multi',    mode:34,  cat:'Solid',   icon:'🎨'},
 ];
 
 let activeCat='All', activeMode=-1, manualMode=0;
@@ -639,15 +701,8 @@ function renderFx() {
     const el=document.createElement('div');
     el.className='fx-card'+(activeMode===fx.mode?' active':'');
     el.id='fx'+fx.mode;
-    el.innerHTML=`<div class="fx-name">${fx.icon} ${fx.name}</div><div class="fx-sub">Mode ${fx.mode} · ${fx.cat}</div>`;
-    el.onclick=()=>{
-      document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
-      el.classList.add('active');
-      activeMode=fx.mode; manualMode=fx.mode;
-      document.getElementById('modeNum').textContent=fx.mode;
-      send(0,0,fx.mode, CMD.MODE);
-      stopPattern();
-    };
+    el.innerHTML=`<div class="fx-icon">${fx.icon}</div><div class="fx-name">${fx.name}</div><div class="fx-sub">Mode ${fx.mode}</div>`;
+    el.onclick=()=>selectEffect(fx.mode, fx.name, fx.icon);
     g.appendChild(el);
   });
 }
@@ -660,12 +715,31 @@ function onSpeed() {
   speedTimer=setTimeout(()=>sendFast(0,0,v,CMD.SPEED), 80);
 }
 
+function selectEffect(mode, name, icon) {
+  document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
+  const card=document.getElementById('fx'+mode);
+  if(card) card.classList.add('active');
+  activeMode=mode; manualMode=mode;
+  document.getElementById('modeNum').textContent=mode;
+  send(0,0,mode, CMD.MODE);
+  stopPattern();
+  // update now-playing bar
+  const bar=document.getElementById('fxNow');
+  bar.style.display='flex';
+  document.getElementById('fxNowName').textContent=(icon||'')+'  '+name;
+  document.getElementById('fxNowMode').textContent='Mode '+mode;
+}
+
 function nudgeMode(delta) {
   manualMode=Math.max(0,Math.min(179,manualMode+delta));
   document.getElementById('modeNum').textContent=manualMode;
   send(0,0,manualMode, CMD.MODE);
   document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
   activeMode=manualMode;
+  const bar=document.getElementById('fxNow');
+  bar.style.display='flex';
+  document.getElementById('fxNowName').textContent='Mode '+manualMode;
+  document.getElementById('fxNowMode').textContent='browsing';
 }
 
 // ─── PATTERNS ─────────────────────────────────────────────────────────────────
