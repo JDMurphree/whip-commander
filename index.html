@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Whip Commander</title>
+<style>
+:root {
+  --bg:       #090909;
+  --surface:  #121212;
+  --surface2: #1c1c1c;
+  --surface3: #242424;
+  --accent:   #ff6a00;
+  --accent2:  #ff9d00;
+  --text:     #f0f0f0;
+  --text2:    #777;
+  --text3:    #444;
+  --danger:   #ff3b30;
+  --success:  #2ecc71;
+  --border:   #252525;
+  --r:        12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;}
+
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;height:100dvh;max-width:520px;margin:0 auto;}
+
+/* ── Header ── */
+.header{
+  padding:14px 18px 10px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.logo{
+  font-size:18px;font-weight:900;letter-spacing:2px;text-transform:uppercase;
+  background:linear-gradient(120deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  flex:1;
+}
+.conn-btn{
+  padding:7px 16px;border-radius:20px;border:none;
+  font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.conn-btn.off{background:var(--accent);color:#fff;}
+.conn-btn.on{background:var(--success);color:#fff;}
+
+/* ── Status bar ── */
+.status-bar{
+  padding:6px 18px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+.dot.live{background:var(--success);box-shadow:0 0 6px var(--success);}
+
+/* ── Scrollable content ── */
+.content{flex:1;overflow-y:auto;padding:14px 14px 8px;-webkit-overflow-scrolling:touch;}
+
+/* ── Tab nav ── */
+.tab-nav{
+  display:flex;background:var(--surface);border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.tab-btn{
+  flex:1;padding:9px 4px 7px;border:none;background:transparent;color:var(--text2);
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:color .15s;
+}
+.tab-btn .ti{font-size:19px;line-height:1;}
+.tab-btn.active{color:var(--accent);}
+
+/* ── Tab sections ── */
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* ── Section header ── */
+.sec-label{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--text2);margin-bottom:8px;
+}
+
+/* ── Card ── */
+.card{
+  background:var(--surface);border-radius:var(--r);
+  padding:14px;border:1px solid var(--border);margin-bottom:14px;
+}
+
+/* ── Native color input ── */
+input[type=color]{
+  width:100%;height:68px;border:none;border-radius:10px;cursor:pointer;
+  padding:4px;background:var(--surface2);
+}
+
+/* ── Sliders ── */
+.slider-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.slider-label{font-size:12px;color:var(--text2);min-width:72px;}
+input[type=range]{
+  flex:1;-webkit-appearance:none;height:5px;border-radius:3px;
+  background:var(--surface2);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(255,106,0,.5);
+}
+.slider-val{font-size:12px;font-weight:700;min-width:34px;text-align:right;color:var(--accent);}
+
+/* ── Quick colors ── */
+.qc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;}
+.qc-dot{
+  aspect-ratio:1;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;transition:transform .1s,border-color .15s;
+  box-shadow:0 2px 6px rgba(0,0,0,.5);
+}
+.qc-dot:active{transform:scale(.88);}
+.qc-dot.selected{border-color:#fff;}
+
+/* ── Category pills ── */
+.pills{
+  display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;
+  scrollbar-width:none;
+}
+.pills::-webkit-scrollbar{display:none;}
+.pill{
+  padding:5px 13px;border-radius:20px;background:var(--surface2);
+  border:1px solid var(--border);font-size:11px;font-weight:700;
+  white-space:nowrap;cursor:pointer;transition:all .15s;color:var(--text2);
+}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ── Effects grid ── */
+.fx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.fx-card{
+  background:var(--surface2);border-radius:10px;padding:12px;
+  border:1.5px solid var(--border);cursor:pointer;transition:all .15s;
+}
+.fx-card:active{transform:scale(.96);}
+.fx-card.active{border-color:var(--accent);background:rgba(255,106,0,.1);}
+.fx-name{font-size:13px;font-weight:700;margin-bottom:3px;}
+.fx-sub{font-size:10px;color:var(--text2);}
+
+/* ── Mode browser ── */
+.mode-browser{display:flex;align-items:center;gap:12px;}
+.mode-nav-btn{
+  width:48px;height:48px;border-radius:10px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text);font-size:22px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.mode-nav-btn:active{background:var(--accent);}
+.mode-num{flex:1;text-align:center;font-size:32px;font-weight:900;color:var(--accent);}
+.mode-hint{text-align:center;font-size:11px;color:var(--text2);margin-top:6px;}
+
+/* ── Pattern builder ── */
+.pat-colors{display:flex;flex-wrap:wrap;gap:7px;min-height:36px;margin-bottom:12px;}
+.pat-chip{
+  display:flex;align-items:center;gap:6px;background:var(--surface2);
+  border-radius:20px;padding:5px 10px;border:1px solid var(--border);
+}
+.pat-chip-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;}
+.pat-chip-lbl{font-size:11px;color:var(--text2);}
+.pat-chip-rm{font-size:17px;color:var(--text3);cursor:pointer;line-height:1;}
+.pat-chip-rm:active{color:var(--danger);}
+.pat-add-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.pat-add-row input[type=color]{width:56px;height:44px;border-radius:8px;flex-shrink:0;}
+
+/* ── Preset cards ── */
+.preset-card{
+  background:var(--surface);border-radius:var(--r);padding:12px 14px;
+  border:1px solid var(--border);margin-bottom:9px;
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+}
+.preset-card:active{background:var(--surface2);}
+.preset-name{flex:1;font-size:13px;font-weight:700;}
+.preset-dots{display:flex;gap:4px;}
+.preset-dot{width:14px;height:14px;border-radius:50%;}
+.preset-load{
+  padding:5px 12px;border-radius:8px;background:var(--accent);
+  color:#fff;font-size:11px;font-weight:700;border:none;cursor:pointer;
+  flex-shrink:0;
+}
+
+/* ── Play button ── */
+.play-btn{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  cursor:pointer;transition:all .15s;margin-bottom:10px;
+}
+.play-btn.idle{background:var(--accent);color:#fff;}
+.play-btn.playing{background:var(--danger);color:#fff;}
+.play-btn:active{transform:scale(.97);}
+
+/* ── Settings ── */
+.setting-row{
+  display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--border);
+}
+.setting-row:last-child{border:none;}
+.setting-label{flex:1;font-size:13px;font-weight:600;}
+.setting-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.toggle{position:relative;width:50px;height:27px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.tslider{
+  position:absolute;inset:0;background:var(--surface2);border-radius:14px;
+  cursor:pointer;transition:.2s;border:1px solid var(--border);
+}
+.tslider::before{
+  content:'';position:absolute;width:21px;height:21px;left:2px;top:2px;
+  background:#fff;border-radius:50%;transition:.2s;
+}
+input:checked+.tslider{background:var(--accent);border-color:var(--accent);}
+input:checked+.tslider::before{transform:translateX(23px);}
+
+/* ── Color order buttons ── */
+.order-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px;}
+.order-btn{
+  padding:9px 6px;border-radius:8px;background:var(--surface2);
+  border:1.5px solid var(--border);color:var(--text2);font-size:12px;
+  font-weight:700;cursor:pointer;transition:all .15s;text-align:center;
+}
+.order-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+  background:rgba(30,30,30,.95);border:1px solid var(--border);border-radius:10px;
+  padding:9px 18px;font-size:12px;font-weight:600;z-index:999;
+  opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;}
+
+/* ── Utility ── */
+.btn-clear{
+  width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-size:13px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;cursor:pointer;
+}
+.btn-clear:active{background:var(--surface2);}
+.empty-hint{font-size:12px;color:var(--text3);padding:6px 0;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">⚡ Whip Commander</div>
+    <button class="conn-btn off" id="connBtn" onclick="toggleConnect()">Connect</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Not connected — tap Connect and pick your device</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+
+    <!-- ══ COLOR tab ══ -->
+    <div class="tab-content active" id="tab-color">
+      <div class="sec-label">Pick a Color</div>
+      <div class="card">
+        <input type="color" id="colorPicker" value="#ff0000" oninput="onColorInput()">
+        <div class="slider-row">
+          <span class="slider-label">Brightness</span>
+          <input type="range" id="brightSlider" min="0" max="255" value="255" oninput="onBright()">
+          <span class="slider-val" id="brightVal">255</span>
+        </div>
+      </div>
+
+      <div class="sec-label">Quick Colors</div>
+      <div class="card">
+        <div class="qc-grid" id="qcGrid"></div>
+      </div>
+    </div>
+
+    <!-- ══ EFFECTS tab ══ -->
+    <div class="tab-content" id="tab-effects">
+      <div class="pills" id="catPills"></div>
+
+      <div class="fx-grid" id="fxGrid"></div>
+
+      <div class="sec-label" style="margin-top:4px;">Speed</div>
+      <div class="card">
+        <div class="slider-row" style="margin-top:0;">
+          <span class="slider-label">Speed</span>
+          <input type="range" id="speedSlider" min="0" max="255" value="128" oninput="onSpeed()">
+          <span class="slider-val" id="speedVal">128</span>
+        </div>
+      </div>
+
+      <div class="sec-label">Browse All 180 Modes</div>
+      <div class="card">
+        <div class="mode-browser">
+          <button class="mode-nav-btn" onclick="nudgeMode(-1)">‹</button>
+          <div class="mode-num" id="modeNum">0</div>
+          <button class="mode-nav-btn" onclick="nudgeMode(1)">›</button>
+        </div>
+        <div class="mode-hint">Tap arrows to explore every built-in effect</div>
+      </div>
+    </div>
+
+    <!-- ══ PATTERNS tab ══ -->
+    <div class="tab-content" id="tab-patterns">
+      <div class="sec-label">Build a Color Sequence</div>
+      <div class="card">
+        <div class="pat-colors" id="patColors">
+          <span class="empty-hint">Add colors below then hit Play</span>
+        </div>
+        <div class="pat-add-row">
+          <input type="color" id="patPicker" value="#ff0000">
+          <button class="play-btn idle" style="margin-bottom:0;flex:1;padding:10px;" onclick="addColor()">+ Add Color</button>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Duration</span>
+          <input type="range" id="durSlider" min="150" max="5000" step="50" value="500" oninput="onDur()">
+          <span class="slider-val" id="durVal">0.5s</span>
+        </div>
+      </div>
+
+      <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play Sequence</button>
+      <button class="btn-clear" onclick="clearSequence()">Clear Sequence</button>
+
+      <div class="sec-label" style="margin-top:16px;">Presets</div>
+      <div id="presets"></div>
+    </div>
+
+    <!-- ══ SETTINGS tab ══ -->
+    <div class="tab-content" id="tab-settings">
+      <div class="sec-label">Device</div>
+      <div class="card">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Power</div>
+            <div class="setting-sub">Turn lights on / off</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="powerChk" checked onchange="onPower()">
+            <span class="tslider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="sec-label">Color Channel Order</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);line-height:1.5;">
+          Rhino Lights uses <strong style="color:var(--text);">GRB</strong>. If colors appear wrong, try a different order.
+        </div>
+        <div class="order-grid" id="orderGrid"></div>
+      </div>
+
+      <div class="sec-label">About</div>
+      <div class="card">
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;">
+          Whip Commander v1.0<br>
+          For SP107E / Rhino Lights BLE controllers<br>
+          Requires Chrome on Android (Web Bluetooth)<br>
+          Open at <strong style="color:var(--text);">localhost/JDM3/whip-controller</strong>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Tab nav -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('color',this)">
+      <span class="ti">🎨</span>Color
+    </button>
+    <button class="tab-btn" onclick="showTab('effects',this)">
+      <span class="ti">✨</span>Effects
+    </button>
+    <button class="tab-btn" onclick="showTab('patterns',this)">
+      <span class="ti">🔄</span>Pattern
+    </button>
+    <button class="tab-btn" onclick="showTab('settings',this)">
+      <span class="ti">⚙️</span>Settings
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── BLE ──────────────────────────────────────────────────────────────────────
+const SVC  = '0000ffe0-0000-1000-8000-00805f9b34fb';
+const CHAR = '0000ffe1-0000-1000-8000-00805f9b34fb';
+const CMD  = { ON:0xAA, OFF:0xBB, COLOR:0x0C, MODE:0x08, SPEED:0x09, BRIGHT:0x0A };
+
+let bleDevice=null, bleChar=null, connected=false;
+
+async function toggleConnect() {
+  connected ? disconnect() : await connect();
+}
+
+async function connect() {
+  if (!navigator.bluetooth) {
+    toast('Web Bluetooth not supported. Use Chrome on Android.',4000); return;
+  }
+  try {
+    toast('Scanning for devices…');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [SVC]
+    });
+    bleDevice.addEventListener('gattserverdisconnected', onDrop);
+    const srv  = await bleDevice.gatt.connect();
+    const svc  = await srv.getPrimaryService(SVC);
+    bleChar    = await svc.getCharacteristic(CHAR);
+    setConn(true, bleDevice.name || 'Rhino Lights');
+    toast('Connected!');
+  } catch(e) {
+    if (e.name !== 'NotFoundError') toast('Error: '+e.message, 3000);
+    setConn(false);
+  }
+}
+
+function disconnect() {
+  if (bleDevice?.gatt.connected) bleDevice.gatt.disconnect();
+  setConn(false);
+}
+
+function onDrop() { setConn(false); toast('Disconnected'); }
+
+function setConn(state, name='') {
+  connected = state;
+  bleChar   = state ? bleChar : null;
+  const btn = document.getElementById('connBtn');
+  const dot = document.getElementById('dot');
+  const txt = document.getElementById('statusTxt');
+  if (state) {
+    btn.textContent='Disconnect'; btn.className='conn-btn on';
+    dot.className='dot live'; txt.textContent=name;
+  } else {
+    btn.textContent='Connect'; btn.className='conn-btn off';
+    dot.className='dot'; txt.textContent='Not connected';
+    bleChar=null;
+  }
+}
+
+async function send(b1,b2,b3,cmd) {
+  if (!bleChar) { toast('Not connected'); return; }
+  try {
+    const data = new Uint8Array([b1,b2,b3,cmd]);
+    if (bleChar.properties?.writeWithoutResponse)
+      await bleChar.writeValueWithoutResponse(data);
+    else
+      await bleChar.writeValue(data);
+  } catch(e) { console.error('BLE write:',e); }
+}
+
+// ─── COLOR ORDER ──────────────────────────────────────────────────────────────
+let colorOrder = 'GRB'; // Rhino Lights default
+
+function reorder(r,g,b) {
+  switch(colorOrder) {
+    case 'RGB': return [r,g,b];
+    case 'GRB': return [g,r,b];
+    case 'BGR': return [b,g,r];
+    case 'BRG': return [b,r,g];
+    case 'RBG': return [r,b,g];
+    case 'GBR': return [g,b,r];
+  }
+}
+
+function hexRgb(hex) {
+  return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+}
+
+function sendColor(hex) {
+  const [r,g,b] = hexRgb(hex);
+  const [b1,b2,b3] = reorder(r,g,b);
+  send(b1,b2,b3, CMD.COLOR);
+}
+
+// ─── QUICK COLORS ─────────────────────────────────────────────────────────────
+const QUICK = [
+  {name:'Red',     hex:'#ff0000'},
+  {name:'Orange',  hex:'#ff6600'},
+  {name:'Yellow',  hex:'#ffff00'},
+  {name:'Green',   hex:'#00ff00'},
+  {name:'Cyan',    hex:'#00ffff'},
+  {name:'Blue',    hex:'#0055ff'},
+  {name:'Purple',  hex:'#8800ff'},
+  {name:'Pink',    hex:'#ff00cc'},
+  {name:'White',   hex:'#ffffff'},
+  {name:'Warm',    hex:'#ffaa44'},
+  {name:'Ice',     hex:'#aaddff'},
+  {name:'Off',     hex:'#000000'},
+];
+
+function buildQuickColors() {
+  const g = document.getElementById('qcGrid');
+  QUICK.forEach(c => {
+    const d = document.createElement('div');
+    d.className='qc-dot'; d.style.background=c.hex; d.title=c.name;
+    d.onclick = () => {
+      g.querySelectorAll('.qc-dot').forEach(x=>x.classList.remove('selected'));
+      d.classList.add('selected');
+      document.getElementById('colorPicker').value = c.hex==='#000000'?'#010101':c.hex;
+      sendColor(c.hex);
+      stopPattern();
+    };
+    g.appendChild(d);
+  });
+}
+
+// ─── COLOR TAB ────────────────────────────────────────────────────────────────
+let colorTimer=null;
+function onColorInput() {
+  clearTimeout(colorTimer);
+  colorTimer=setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); },40);
+}
+
+function onBright() {
+  const v=+document.getElementById('brightSlider').value;
+  document.getElementById('brightVal').textContent=v;
+  send(0,0,v, CMD.BRIGHT);
+}
+
+// ─── EFFECTS ──────────────────────────────────────────────────────────────────
+const EFFECTS = [
+  // Chase
+  {name:'Rainbow Chase', mode:1,  cat:'Chase',   icon:'🌈'},
+  {name:'Color Comet',   mode:25, cat:'Chase',   icon:'☄️'},
+  {name:'Running',       mode:30, cat:'Chase',   icon:'▶'},
+  {name:'Meteor',        mode:38, cat:'Chase',   icon:'💫'},
+  {name:'Theater Chase', mode:43, cat:'Chase',   icon:'🎭'},
+  // Breathe
+  {name:'Breathe',       mode:6,  cat:'Breathe', icon:'◎'},
+  {name:'Color Pulse',   mode:7,  cat:'Breathe', icon:'🫀'},
+  {name:'Heartbeat',     mode:60, cat:'Breathe', icon:'💗'},
+  {name:'Ocean Wave',    mode:65, cat:'Breathe', icon:'🌊'},
+  // Flash
+  {name:'Strobe',        mode:10, cat:'Flash',   icon:'⚡'},
+  {name:'Police',        mode:35, cat:'Flash',   icon:'🚨'},
+  {name:'Lightning',     mode:40, cat:'Flash',   icon:'🌩️'},
+  {name:'Disco',         mode:50, cat:'Flash',   icon:'🪩'},
+  // Ambient
+  {name:'Fire',          mode:45, cat:'Ambient', icon:'🔥'},
+  {name:'Twinkle',       mode:52, cat:'Ambient', icon:'✦'},
+  {name:'Stars',         mode:55, cat:'Ambient', icon:'⭐'},
+  {name:'Lava',          mode:70, cat:'Ambient', icon:'🌋'},
+  {name:'Plasma',        mode:75, cat:'Ambient', icon:'🔵'},
+  // Rainbow
+  {name:'Rainbow',       mode:2,  cat:'Rainbow', icon:'🎨'},
+  {name:'Rainbow Spin',  mode:3,  cat:'Rainbow', icon:'🔄'},
+  {name:'Color Wipe',    mode:15, cat:'Rainbow', icon:'🖌'},
+  {name:'Gradient',      mode:20, cat:'Rainbow', icon:'🌅'},
+];
+
+let activeCat='All', activeMode=-1, manualMode=0;
+
+function buildEffects() {
+  // Pills
+  const cats = ['All',...new Set(EFFECTS.map(e=>e.cat))];
+  const pp = document.getElementById('catPills');
+  cats.forEach(cat=>{
+    const el=document.createElement('div');
+    el.className='pill'+(cat==='All'?' active':'');
+    el.textContent=cat;
+    el.onclick=()=>{ activeCat=cat; pp.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); el.classList.add('active'); renderFx(); };
+    pp.appendChild(el);
+  });
+  renderFx();
+}
+
+function renderFx() {
+  const list = activeCat==='All' ? EFFECTS : EFFECTS.filter(e=>e.cat===activeCat);
+  const g=document.getElementById('fxGrid'); g.innerHTML='';
+  list.forEach(fx=>{
+    const el=document.createElement('div');
+    el.className='fx-card'+(activeMode===fx.mode?' active':'');
+    el.id='fx'+fx.mode;
+    el.innerHTML=`<div class="fx-name">${fx.icon} ${fx.name}</div><div class="fx-sub">Mode ${fx.mode} · ${fx.cat}</div>`;
+    el.onclick=()=>{
+      document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      activeMode=fx.mode; manualMode=fx.mode;
+      document.getElementById('modeNum').textContent=fx.mode;
+      send(0,0,fx.mode, CMD.MODE);
+      stopPattern();
+    };
+    g.appendChild(el);
+  });
+}
+
+function onSpeed() {
+  const v=+document.getElementById('speedSlider').value;
+  document.getElementById('speedVal').textContent=v;
+  send(0,0,v, CMD.SPEED);
+}
+
+function nudgeMode(delta) {
+  manualMode=Math.max(0,Math.min(179,manualMode+delta));
+  document.getElementById('modeNum').textContent=manualMode;
+  send(0,0,manualMode, CMD.MODE);
+  document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
+  activeMode=manualMode;
+}
+
+// ─── PATTERNS ─────────────────────────────────────────────────────────────────
+const PRESETS = [
+  {name:'🇺🇸 Patriotic', colors:['#ff0000','#ffffff','#0033cc'], dur:500},
+  {name:'🚨 Police',     colors:['#ff0000','#0033ff'],            dur:250},
+  {name:'🎃 Halloween',  colors:['#ff6600','#8800cc','#000000'],  dur:400},
+  {name:'🎄 Christmas',  colors:['#ff0000','#00bb00'],             dur:400},
+  {name:'🌈 Full Rainbow',colors:['#ff0000','#ff7700','#ffff00','#00ff00','#0000ff','#8800ff'], dur:250},
+  {name:'🔥 Fire Flash',  colors:['#ff0000','#ff4400','#ff8800','#ffcc00'], dur:150},
+  {name:'🩵 Ice & Fire', colors:['#ff2200','#0088ff'],            dur:350},
+  {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:300},
+];
+
+let sequence=[], patTimer=null, patPlaying=false, patIdx=0;
+
+function buildPresets() {
+  const c=document.getElementById('presets');
+  PRESETS.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='preset-card';
+    el.innerHTML=`
+      <div class="preset-name">${p.name}</div>
+      <div class="preset-dots">${p.colors.map(col=>`<div class="preset-dot" style="background:${col}"></div>`).join('')}</div>
+      <button class="preset-load" onclick="loadPreset(${i})">Load</button>
+    `;
+    c.appendChild(el);
+  });
+}
+
+function loadPreset(i) {
+  const p=PRESETS[i];
+  sequence=p.colors.map(hex=>({hex}));
+  document.getElementById('durSlider').value=p.dur;
+  onDur();
+  renderSeq();
+  toast('Preset loaded — tap Play!');
+}
+
+function addColor() {
+  sequence.push({hex:document.getElementById('patPicker').value});
+  renderSeq();
+}
+
+function removeSeqColor(i) {
+  sequence.splice(i,1); renderSeq();
+}
+
+function renderSeq() {
+  const c=document.getElementById('patColors'); c.innerHTML='';
+  if(!sequence.length){ c.innerHTML='<span class="empty-hint">Add colors below then hit Play</span>'; return; }
+  sequence.forEach((col,i)=>{
+    const el=document.createElement('div');
+    el.className='pat-chip';
+    el.innerHTML=`<div class="pat-chip-dot" style="background:${col.hex}"></div>
+                  <span class="pat-chip-lbl">${col.hex.toUpperCase()}</span>
+                  <span class="pat-chip-rm" onclick="removeSeqColor(${i})">×</span>`;
+    c.appendChild(el);
+  });
+}
+
+function onDur() {
+  const v=+document.getElementById('durSlider').value;
+  document.getElementById('durVal').textContent=(v/1000).toFixed(2).replace(/\.?0+$/,'')+'s';
+}
+
+function togglePattern() {
+  patPlaying ? stopPattern() : startPattern();
+}
+
+function startPattern() {
+  if(!sequence.length){ toast('Add at least one color first'); return; }
+  patPlaying=true; patIdx=0;
+  document.getElementById('playBtn').textContent='⏹ Stop';
+  document.getElementById('playBtn').className='play-btn playing';
+  const dur=+document.getElementById('durSlider').value;
+  sendColor(sequence[0].hex); patIdx=1;
+  patTimer=setInterval(()=>{
+    sendColor(sequence[patIdx%sequence.length].hex);
+    patIdx++;
+  }, dur);
+}
+
+function stopPattern() {
+  clearInterval(patTimer); patTimer=null; patPlaying=false;
+  const btn=document.getElementById('playBtn');
+  if(btn){ btn.textContent='▶ Play Sequence'; btn.className='play-btn idle'; }
+}
+
+function clearSequence() {
+  stopPattern(); sequence=[]; renderSeq();
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+const ORDERS=['RGB','GRB','BGR','BRG','RBG','GBR'];
+
+function buildOrderBtns() {
+  const g=document.getElementById('orderGrid');
+  ORDERS.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='order-btn'+(o===colorOrder?' active':'');
+    b.textContent=o;
+    b.onclick=()=>{
+      colorOrder=o;
+      g.querySelectorAll('.order-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      toast('Color order: '+o);
+    };
+    g.appendChild(b);
+  });
+}
+
+function onPower() {
+  const on=document.getElementById('powerChk').checked;
+  send(0,0,0, on?CMD.ON:CMD.OFF);
+  toast(on?'Lights On':'Lights Off');
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(name,btn) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer=null;
+function toast(msg,ms=1800) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+buildQuickColors();
+buildEffects();
+buildPresets();
+buildOrderBtns();
+onDur();
+</script>
+</body>
+</html>
