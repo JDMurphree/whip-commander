@@ -752,11 +752,20 @@ let sequence=[], patTimer=null, patPlaying=false, patIdx=0;
 
 function buildChaseStyles() {
   const g=document.getElementById('chaseStyleBtns');
+  if(!g) return; // guard — don't break init if element missing
   CHASE_STYLES.forEach(s=>{
     const btn=document.createElement('button');
     btn.className='order-btn'+(s===chaseStyle?' active':'');
-    btn.innerHTML=`<div style="font-size:16px;">${s.icon}</div><div style="font-size:11px;font-weight:700;margin-top:2px;">${s.name}</div><div style="font-size:9px;color:var(--text2);margin-top:1px;">${s.hint}</div>`;
-    btn.style.padding='8px 6px';btn.style.lineHeight='1.2';btn.style.height='auto';
+    btn.style.cssText='padding:8px 6px;line-height:1.3;height:auto;text-align:center;';
+    const icon=document.createElement('div');
+    icon.style.fontSize='18px'; icon.textContent=s.icon;
+    const nm=document.createElement('div');
+    nm.style.cssText='font-size:11px;font-weight:700;margin-top:2px;';
+    nm.textContent=s.name;
+    const ht=document.createElement('div');
+    ht.style.cssText='font-size:9px;color:var(--text2);margin-top:1px;';
+    ht.textContent=s.hint;
+    btn.append(icon,nm,ht);
     btn.onclick=()=>{
       chaseStyle=s;
       g.querySelectorAll('.order-btn').forEach(x=>x.classList.remove('active'));
@@ -835,12 +844,12 @@ async function startPattern() {
   runPatternStep();
 }
 
-function runPatternStep() {
+async function runPatternStep() {
   if(!patPlaying) return;
   const col = sequence[patIdx % sequence.length];
   const [r,g,b] = hexRgb(col.hex);
   const [b1,b2,b3] = reorder(r,g,b);
-  sendFast(b1,b2,b3, CMD.COLOR); // fire-and-forget, never blocks
+  await send(b1,b2,b3, CMD.COLOR);
   patIdx++;
   const dur = Math.max(300, +document.getElementById('durSlider').value);
   patTimer = setTimeout(runPatternStep, dur);
@@ -849,7 +858,7 @@ function runPatternStep() {
 function stopPattern() {
   clearTimeout(patTimer); patTimer=null; patPlaying=false;
   const btn=document.getElementById('playBtn');
-  if(btn){ btn.textContent='▶ Play Sequence'; btn.className='play-btn idle'; }
+  if(btn){ btn.textContent='▶ Play'; btn.className='play-btn idle'; }
 }
 
 function clearSequence() {
