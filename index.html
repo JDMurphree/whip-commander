@@ -1009,11 +1009,13 @@ async function runStackedStep(pairs, idx) {
   if(!stackedRunning) return;
   const [c1, c2] = pairs[idx % pairs.length];
   const _gen = ++sendGeneration;
-  sendMode(43);
-  await new Promise(r=>setTimeout(r,100));
-  if(!stackedRunning || sendGeneration!==_gen) return;
+  // Colors first (before mode), then re-assert after mode init
   await setSlot1(...c1); await setSlot2(...c2);
-  setTimeout(async()=>{ if(stackedRunning && sendGeneration===_gen){ await setSlot1(...c1); await setSlot2(...c2); }}, 150);
+  await new Promise(r=>setTimeout(r,60));
+  if(!stackedRunning || sendGeneration!==_gen) return;
+  sendMode(32); // Mode 32 = Two Colors: designed to use custom color slots
+  setTimeout(async()=>{ if(stackedRunning && sendGeneration===_gen){ await setSlot1(...c1); await setSlot2(...c2); }}, 120);
+  setTimeout(async()=>{ if(stackedRunning && sendGeneration===_gen){ await setSlot1(...c1); await setSlot2(...c2); }}, 300);
   if(!stackedRunning) return;
   stackedTimer = setTimeout(()=>runStackedStep(pairs, idx+1),
     Math.max(2500, +document.getElementById('durSlider').value));
