@@ -358,7 +358,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
         </div>
         <div class="slider-row">
           <span class="slider-label">Duration</span>
-          <input type="range" id="durSlider" min="300" max="5000" step="50" value="500" oninput="onDur()">
+          <input type="range" id="durSlider" min="300" max="10000" step="100" value="2500" oninput="onDur()">
           <span class="slider-val" id="durVal">0.5s</span>
         </div>
       </div>
@@ -731,9 +731,13 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  // Send current color first so single-color modes use it
-  sendColor(document.getElementById('colorPicker').value);
-  setTimeout(()=>sendMode(mode), 80);
+  // Send mode first, then hammer color 3x — single-color modes snap to it,
+  // multi-color modes ignore it (hardware limitation)
+  const _hex = document.getElementById('colorPicker').value;
+  sendMode(mode);
+  setTimeout(()=>sendColor(_hex), 60);
+  setTimeout(()=>sendColor(_hex), 150);
+  setTimeout(()=>sendColor(_hex), 280);
   stopPattern();
   // If this mode is in the chase-style list, auto-select it for patterns too
   const csMatch = CHASE_STYLES.find(s=>s.mode===mode);
@@ -892,8 +896,8 @@ async function runPatternStep() {
   if(chaseStyle.mode !== null) setTimeout(()=>sendMode(chaseStyle.mode), 80);
   if(!patPlaying) return;
   patIdx++;
-  // Chase modes need ≥1s per color to complete a full animation pass
-  const minDur = chaseStyle.mode !== null ? 1000 : 300;
+  // Chase modes need enough time for one full animation pass up the strip
+  const minDur = chaseStyle.mode !== null ? 2500 : 300;
   const dur = Math.max(minDur, +document.getElementById('durSlider').value);
   patTimer = setTimeout(runPatternStep, dur);
 }
