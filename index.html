@@ -512,6 +512,8 @@ function setControlsEnabled(on) {
   document.getElementById('discoOverlay').style.display = on ? 'none' : 'flex';
 }
 
+let sendGeneration = 0; // incremented on any user action to cancel in-flight sequences
+
 async function send(b1,b2,b3,cmd) {
   if (!bleChar) { toast('Not connected'); return; }
   try {
@@ -596,6 +598,7 @@ function buildQuickColors() {
 // ─── COLOR TAB ────────────────────────────────────────────────────────────────
 let colorTimer=null;
 function onColorInput() {
+  ++sendGeneration;
   clearTimeout(colorTimer);
   colorTimer=setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); },40);
 }
@@ -735,13 +738,12 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  // Send mode first, then hammer color 3x — single-color modes snap to it,
-  // multi-color modes ignore it (hardware limitation)
   const _hex = document.getElementById('colorPicker').value;
+  const _gen = ++sendGeneration;
   sendMode(mode);
-  setTimeout(()=>sendColor(_hex), 60);
-  setTimeout(()=>sendColor(_hex), 150);
-  setTimeout(()=>sendColor(_hex), 280);
+  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 60);
+  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 150);
+  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 280);
   stopPattern();
   // If this mode is in the chase-style list, auto-select it for patterns too
   const csMatch = CHASE_STYLES.find(s=>s.mode===mode);
@@ -1001,13 +1003,18 @@ function stopStacked() {
   clearTimeout(stackedTimer);
 }
 
-// Cycle through color pairs so all 3 colors appear over time
+// Cycle through color pairs — activate mode first, then assert colors so
+// mode init can't wipe them. Re-assert twice to fight any delayed reset.
 async function runStackedStep(pairs, idx) {
   if(!stackedRunning) return;
   const [c1, c2] = pairs[idx % pairs.length];
-  await setSlot1(...c1);
-  await setSlot2(...c2);
-  setTimeout(()=>sendMode(43), 80);
+  const _gen = ++sendGeneration;
+  sendMode(43);
+  await new Promise(r=>setTimeout(r,100));
+  if(!stackedRunning || sendGeneration!==_gen) return;
+  await setSlot1(...c1); await setSlot2(...c2);
+  setTimeout(async()=>{ if(stackedRunning && sendGeneration===_gen){ await setSlot1(...c1); await setSlot2(...c2); }}, 150);
+  if(!stackedRunning) return;
   stackedTimer = setTimeout(()=>runStackedStep(pairs, idx+1),
     Math.max(2500, +document.getElementById('durSlider').value));
 }
