@@ -270,6 +270,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
           <span class="slider-label">Brightness</span>
           <input type="range" id="brightSlider" min="0" max="255" value="255" oninput="onBright()">
           <span class="slider-val" id="brightVal">255</span>
+          <button onclick="resetBrightness()" style="margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">MAX</button>
         </div>
       </div>
 
@@ -534,7 +535,19 @@ function onBright() {
   const v=+document.getElementById('brightSlider').value;
   document.getElementById('brightVal').textContent=v;
   clearTimeout(brightTimer);
-  brightTimer=setTimeout(()=>sendFast(0,0,v,CMD.BRIGHT), 80);
+  brightTimer=setTimeout(()=>{
+    sendFast(0,0,v,CMD.BRIGHT);
+    // re-send current color 150ms later so brightness actually applies
+    setTimeout(()=>sendColor(document.getElementById('colorPicker').value), 150);
+  }, 80);
+}
+
+function resetBrightness() {
+  document.getElementById('brightSlider').value=255;
+  document.getElementById('brightVal').textContent=255;
+  sendFast(0,0,255,CMD.BRIGHT);
+  setTimeout(()=>sendColor(document.getElementById('colorPicker').value),150);
+  toast('Brightness reset to full');
 }
 
 // ─── EFFECTS ──────────────────────────────────────────────────────────────────
