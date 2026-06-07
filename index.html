@@ -413,14 +413,16 @@ input:checked+.tslider::before{transform:translateX(23px);}
       <div class="sec-label">Lab — Stacked Colors</div>
       <div class="card">
         <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;">
-          Experimental: tries to set 3 color slots + activate multi-color mode.<br>
-          Tap each test to see what the strip does.
+          Finding 3rd color slot. Test C showed 2 colors (R+W) — now probing for blue slot.
         </div>
         <div style="display:grid;gap:8px;">
-          <button class="tbtn" onclick="labTest1()" style="padding:11px;font-size:12px;">Test A — Color slots 0x0C/0x0D/0x0E → Mode 33</button>
-          <button class="tbtn" onclick="labTest2()" style="padding:11px;font-size:12px;">Test B — Color slots 0x0C/0x0D/0x0E → Mode 34</button>
-          <button class="tbtn" onclick="labTest3()" style="padding:11px;font-size:12px;">Test C — Color slots then Theater Chase (Mode 43)</button>
-          <button class="tbtn" onclick="labTest4()" style="padding:11px;font-size:12px;">Test D — Rapid Wipe: red→white→blue 200ms each</button>
+          <button class="tbtn" onclick="labTest1()" style="padding:11px;font-size:12px;">Test A — 0x0C=Red · 0x0D=White · 0x0E=Blue → Mode 43</button>
+          <button class="tbtn" onclick="labTest2()" style="padding:11px;font-size:12px;">Test B — 0x0C=Red · 0x0D=Blue · 0x0F=White → Mode 43</button>
+          <button class="tbtn" onclick="labTest3()" style="padding:11px;font-size:12px;">Test C — 0x0C=Red · 0x0D=White · 0x0F=Blue → Mode 43</button>
+          <button class="tbtn" onclick="labTest4()" style="padding:11px;font-size:12px;">Test D — 0x10=Red · 0x11=White · 0x12=Blue → Mode 43</button>
+          <button class="tbtn" onclick="labTest5()" style="padding:11px;font-size:12px;">Test E — 0x0C + 0x0D + 0x0E → Mode 33 (Three Colors)</button>
+          <button class="tbtn" onclick="labTest6()" style="padding:11px;font-size:12px;">Test F — 0x0C=Red · 0x0D=White · 0x0E=Blue → Mode 43 slow speed</button>
+          <button class="tbtn" onclick="labStopLoop()" style="padding:11px;font-size:12px;background:var(--danger);color:#fff;">⏹ Stop Loop</button>
         </div>
       </div>
 
@@ -964,46 +966,69 @@ function onPower() {
 }
 
 // ─── LAB TESTS ────────────────────────────────────────────────────────────────
-// Red/White/Blue in GRB order: R=[0,255,0], W=[255,255,255], B=[0,0,255]
+let labLoopTimer=null, labLoopRunning=false;
+
 async function setSlot(cmd, r, g, b) {
   const [b1,b2,b3] = reorder(r,g,b);
   await send(b1,b2,b3, cmd);
 }
+function labStopLoop() {
+  labLoopRunning=false;
+  clearTimeout(labLoopTimer);
+  toast('Loop stopped');
+}
 
+// Known working: 0x0C=slot1, 0x0D=slot2 → mode 43 shows 2 colors
+// Now probing for slot 3
 async function labTest1() {
-  toast('Test A: slots 0x0C/0D/0E → mode 33', 3000);
-  await setSlot(0x0C, 255,0,0);       // color slot 1 = red
-  await setSlot(0x0D, 255,255,255);   // color slot 2 = white
-  await setSlot(0x0E, 0,0,255);       // color slot 3 = blue
-  setTimeout(()=>sendMode(33), 200);
-}
-async function labTest2() {
-  toast('Test B: slots 0x0C/0D/0E → mode 34', 3000);
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 255,255,255);
-  await setSlot(0x0E, 0,0,255);
-  setTimeout(()=>sendMode(34), 200);
-}
-async function labTest3() {
-  toast('Test C: slots → Theater Chase (43)', 3000);
+  labStopLoop();
+  toast('Test A: 0x0C/0D/0E → mode 43', 3000);
   await setSlot(0x0C, 255,0,0);
   await setSlot(0x0D, 255,255,255);
   await setSlot(0x0E, 0,0,255);
   setTimeout(()=>sendMode(43), 200);
 }
-let labTimer=null;
+async function labTest2() {
+  labStopLoop();
+  toast('Test B: 0x0C/0D/0F → mode 43', 3000);
+  await setSlot(0x0C, 255,0,0);
+  await setSlot(0x0D, 0,0,255);
+  await setSlot(0x0F, 255,255,255);
+  setTimeout(()=>sendMode(43), 200);
+}
+async function labTest3() {
+  labStopLoop();
+  toast('Test C: 0x0C/0D/0F → mode 43', 3000);
+  await setSlot(0x0C, 255,0,0);
+  await setSlot(0x0D, 255,255,255);
+  await setSlot(0x0F, 0,0,255);
+  setTimeout(()=>sendMode(43), 200);
+}
 async function labTest4() {
-  toast('Test D: rapid wipe cycle', 3000);
-  clearTimeout(labTimer);
-  const colors=[[255,0,0],[255,255,255],[0,0,255]];
-  let i=0;
-  async function step(){
-    const [r,g,b]=colors[i%3]; i++;
-    await setSlot(0x0C,r,g,b);
-    setTimeout(()=>sendMode(91),40); // mode 91 = Wipe Out
-    labTimer=setTimeout(step,250);
-  }
-  step();
+  labStopLoop();
+  toast('Test D: 0x10/11/12 → mode 43', 3000);
+  await setSlot(0x10, 255,0,0);
+  await setSlot(0x11, 255,255,255);
+  await setSlot(0x12, 0,0,255);
+  setTimeout(()=>sendMode(43), 200);
+}
+async function labTest5() {
+  labStopLoop();
+  toast('Test E: 0x0C/0D/0E → mode 33 (Three Colors)', 3000);
+  await setSlot(0x0C, 255,0,0);
+  await setSlot(0x0D, 255,255,255);
+  await setSlot(0x0E, 0,0,255);
+  setTimeout(()=>sendMode(33), 200);
+}
+async function labTest6() {
+  labStopLoop();
+  toast('Test F: slow speed then 0x0C/0D/0E → mode 43', 3000);
+  sendFast(10,0,0, CMD.SPEED); // slow it way down to see bands clearly
+  await new Promise(r=>setTimeout(r,200));
+  await setSlot(0x0C, 255,0,0);
+  await setSlot(0x0D, 255,255,255);
+  await setSlot(0x0E, 0,0,255);
+  setTimeout(()=>sendMode(43), 200);
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
