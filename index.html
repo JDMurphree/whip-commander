@@ -414,6 +414,18 @@ input:checked+.tslider::before{transform:translateX(23px);}
       </div>
 
 
+      <div class="sec-label">One-Time Color Slot Test</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+          Sends BRIGHT GREEN (0x0C) + BRIGHT ORANGE (0x0D) then mode 43.<br>
+          <strong style="color:var(--text);">If you see green+orange bands: 0x0D works.</strong><br>
+          If you see green + anything else: 0x0D does nothing, mode 43 uses its own colors.
+        </div>
+        <button class="tbtn" onclick="slotConfirmTest()" style="padding:12px;font-size:13px;font-weight:800;">
+          Run Color Slot Confirm Test
+        </button>
+      </div>
+
       <div class="sec-label">About</div>
       <div class="card">
         <div style="font-size:12px;color:var(--text2);line-height:1.7;">
@@ -768,15 +780,16 @@ function nudgeMode(delta) {
 }
 
 // ─── PATTERNS ─────────────────────────────────────────────────────────────────
+// chase: mode number to auto-activate, or null for solid swap
 const PRESETS = [
-  {name:'🇺🇸 Patriotic', colors:['#ff0000','#ffffff','#0033cc'], dur:500},
-  {name:'🚨 Police',     colors:['#ff0000','#0033ff'],            dur:400},
-  {name:'🎃 Halloween',  colors:['#ff6600','#8800cc','#000000'],  dur:450},
-  {name:'🎄 Christmas',  colors:['#ff0000','#00bb00'],             dur:450},
-  {name:'🌈 Full Rainbow',colors:['#ff0000','#ff7700','#ffff00','#00ff00','#0000ff','#8800ff'], dur:400},
-  {name:'🔥 Fire Flash',  colors:['#ff0000','#ff4400','#ff8800','#ffcc00'], dur:350},
-  {name:'🩵 Ice & Fire', colors:['#ff2200','#0088ff'],            dur:400},
-  {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:400},
+  {name:'🇺🇸 Patriotic', colors:['#ff0000','#ffffff','#0033cc'], dur:2500, chase:31},
+  {name:'🚨 Police',     colors:['#ff0000','#0033ff'],            dur:2000, chase:31},
+  {name:'🎃 Halloween',  colors:['#ff6600','#8800cc'],            dur:2000, chase:31},
+  {name:'🎄 Christmas',  colors:['#ff0000','#00bb00'],            dur:2000, chase:31},
+  {name:'🌈 Full Rainbow',colors:['#ff0000','#ff7700','#ffff00','#00ff00','#0000ff','#8800ff'], dur:1200, chase:null},
+  {name:'🔥 Fire Flash',  colors:['#ff0000','#ff4400','#ff8800','#ffcc00'], dur:500,  chase:null},
+  {name:'🩵 Ice & Fire', colors:['#ff2200','#0088ff'],            dur:2000, chase:31},
+  {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:2000, chase:31},
 ];
 
 // ── Chase styles ─────────────────────────────────────────────────────────────
@@ -841,11 +854,17 @@ function playPreset(i) {
   document.getElementById('durSlider').value=p.dur;
   onDur();
   renderSeq();
-  // highlight active preset
+  // auto-set chase mode from preset definition
+  if(p.chase !== null && p.chase !== undefined) {
+    const cs = CHASE_STYLES.find(s=>s.mode===p.chase);
+    if(cs){ chaseStyle=cs; buildChaseStyles(); }
+  } else {
+    chaseStyle = CHASE_STYLES[0]; // solid swap
+    buildChaseStyles();
+  }
   document.querySelectorAll('.preset-card').forEach(x=>x.style.borderColor='');
   const card=document.getElementById('preset-'+i);
   if(card) card.style.borderColor=getComputedStyle(document.documentElement).getPropertyValue('--accent');
-  // start playing immediately
   startPattern();
   toast(p.name+' playing');
 }
@@ -982,6 +1001,24 @@ function buildStackedPresets() {
     };
     c.appendChild(el);
   });
+}
+
+// ─── SLOT CONFIRM TEST ────────────────────────────────────────────────────────
+// Uses ONLY safe commands: 0x0C and 0x0D with mode 43.
+// Distinctive colors (bright green + bright orange) to definitively confirm
+// whether 0x0D actually sets a second color slot for mode 43.
+async function slotConfirmTest() {
+  const _gen = ++sendGeneration;
+  toast('Sending green(0x0C) + orange(0x0D) → mode 43...', 4000);
+  const [g1,g2,g3] = reorder(0,255,0);   // bright green
+  const [o1,o2,o3] = reorder(255,100,0); // bright orange
+  await send(g1,g2,g3, 0x0C); // slot 1 = green
+  await send(o1,o2,o3, 0x0D); // slot 2 = orange (if 0x0D is a real slot)
+  await new Promise(r=>setTimeout(r,60));
+  if(sendGeneration!==_gen) return;
+  sendMode(43);
+  // Re-assert after mode init
+  setTimeout(async()=>{ if(sendGeneration===_gen){ await send(g1,g2,g3,0x0C); await send(o1,o2,o3,0x0D); }}, 150);
 }
 
 // ─── STACKED CHASE ────────────────────────────────────────────────────────────
