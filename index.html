@@ -426,8 +426,11 @@ async function connect() {
     setConn(true, bleDevice.name || 'Rhino Lights');
     toast('Connected!');
     // restore full brightness and current color on every connect
-    setTimeout(()=>{ sendFast(0,0,255,CMD.BRIGHT); }, 300);
-    setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); }, 600);
+    setTimeout(async ()=>{
+      await send(0,0,255, CMD.BRIGHT);
+      await new Promise(r=>setTimeout(r,150));
+      sendColor(document.getElementById('colorPicker').value);
+    }, 400);
   } catch(e) {
     if (e.name !== 'NotFoundError') toast('Error: '+e.message, 3000);
     setConn(false);
@@ -548,18 +551,19 @@ function onBright() {
   const v=+document.getElementById('brightSlider').value;
   document.getElementById('brightVal').textContent=v;
   clearTimeout(brightTimer);
-  brightTimer=setTimeout(()=>{
-    sendFast(0,0,v,CMD.BRIGHT);
-    // re-send current color 150ms later so brightness actually applies
-    setTimeout(()=>sendColor(document.getElementById('colorPicker').value), 150);
+  brightTimer=setTimeout(async ()=>{
+    await send(0,0,v, CMD.BRIGHT);
+    await new Promise(r=>setTimeout(r,120));
+    sendColor(document.getElementById('colorPicker').value);
   }, 80);
 }
 
-function resetBrightness() {
+async function resetBrightness() {
   document.getElementById('brightSlider').value=255;
   document.getElementById('brightVal').textContent=255;
-  sendFast(0,0,255,CMD.BRIGHT);
-  setTimeout(()=>sendColor(document.getElementById('colorPicker').value),150);
+  await send(0,0,255, CMD.BRIGHT);
+  await new Promise(r=>setTimeout(r,120));
+  sendColor(document.getElementById('colorPicker').value);
   toast('Brightness reset to full');
 }
 
@@ -765,14 +769,18 @@ function buildOrderBtns() {
 
 async function hardReset() {
   toast('Resetting…', 3000);
-  // disconnect and reconnect fresh
   if (bleDevice?.gatt.connected) bleDevice.gatt.disconnect();
   setConn(false);
   await new Promise(r=>setTimeout(r,800));
   await connect();
-  // then blast full brightness multiple times to break through stuck state
-  [400,700,1100].forEach(ms=>setTimeout(()=>sendFast(0,0,255,CMD.BRIGHT),ms));
-  [600,900,1300].forEach(ms=>setTimeout(()=>sendColor(document.getElementById('colorPicker').value),ms));
+  // send full brightness + color multiple times with awaited send()
+  for (const ms of [500, 900, 1400]) {
+    setTimeout(async ()=>{
+      await send(0,0,255, CMD.BRIGHT);
+      await new Promise(r=>setTimeout(r,120));
+      sendColor(document.getElementById('colorPicker').value);
+    }, ms);
+  }
 }
 
 function onPower() {
