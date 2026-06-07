@@ -272,6 +272,16 @@ input:checked+.tslider::before{transform:translateX(23px);}
           <span class="slider-val" id="brightVal">100%</span>
           <button onclick="resetBrightness()" style="margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">MAX</button>
         </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Brightness Calibration — tap each, tell me which is brightest:</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+            <button onclick="testBright(0)"   style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">0</button>
+            <button onclick="testBright(25)"  style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">25</button>
+            <button onclick="testBright(50)"  style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">50</button>
+            <button onclick="testBright(100)" style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">100</button>
+            <button onclick="testBright(255)" style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">255</button>
+          </div>
+        </div>
       </div>
 
       <div class="sec-label">Quick Colors</div>
@@ -557,6 +567,13 @@ function onBright() {
     await new Promise(r=>setTimeout(r,120));
     sendColor(document.getElementById('colorPicker').value);
   }, 80);
+}
+
+async function testBright(val) {
+  toast('Sending brightness = '+val);
+  await send(0,0,val, CMD.BRIGHT);
+  await new Promise(r=>setTimeout(r,120));
+  sendColor(document.getElementById('colorPicker').value);
 }
 
 async function resetBrightness() {
