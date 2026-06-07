@@ -731,10 +731,13 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  // Send current color first so color-responsive modes use it
+  // Send current color first so single-color modes use it
   sendColor(document.getElementById('colorPicker').value);
   setTimeout(()=>sendMode(mode), 80);
   stopPattern();
+  // If this mode is in the chase-style list, auto-select it for patterns too
+  const csMatch = CHASE_STYLES.find(s=>s.mode===mode);
+  if(csMatch){ chaseStyle=csMatch; buildChaseStyles(); }
   // update now-playing bar
   const bar=document.getElementById('fxNow');
   bar.style.display='flex';
@@ -781,7 +784,8 @@ let sequence=[], patTimer=null, patPlaying=false, patIdx=0;
 
 function buildChaseStyles() {
   const g=document.getElementById('chaseStyleBtns');
-  if(!g) return; // guard — don't break init if element missing
+  if(!g) return;
+  g.innerHTML='';
   CHASE_STYLES.forEach(s=>{
     const btn=document.createElement('button');
     btn.className='order-btn'+(s===chaseStyle?' active':'');
