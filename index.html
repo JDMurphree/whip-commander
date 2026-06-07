@@ -588,8 +588,8 @@ function buildQuickColors() {
       g.querySelectorAll('.qc-dot').forEach(x=>x.classList.remove('selected'));
       d.classList.add('selected');
       document.getElementById('colorPicker').value = c.hex==='#000000'?'#010101':c.hex;
+      stopPattern(); stopStacked();
       sendColor(c.hex);
-      stopPattern();
     };
     g.appendChild(d);
   });
@@ -598,7 +598,7 @@ function buildQuickColors() {
 // ─── COLOR TAB ────────────────────────────────────────────────────────────────
 let colorTimer=null;
 function onColorInput() {
-  ++sendGeneration;
+  stopPattern(); stopStacked();
   clearTimeout(colorTimer);
   colorTimer=setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); },40);
 }
@@ -909,6 +909,7 @@ async function runPatternStep() {
 }
 
 function stopPattern() {
+  ++sendGeneration;
   clearTimeout(patTimer); patTimer=null; patPlaying=false;
   const btn=document.getElementById('playBtn');
   if(btn){ btn.textContent='▶ Play'; btn.className='play-btn idle'; }
@@ -999,6 +1000,7 @@ async function setSlot2(r,g,b) {
 }
 
 function stopStacked() {
+  ++sendGeneration;
   stackedRunning=false;
   clearTimeout(stackedTimer);
 }
