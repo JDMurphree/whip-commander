@@ -327,7 +327,15 @@ input:checked+.tslider::before{transform:translateX(23px);}
 
     <!-- ══ PATTERNS tab ══ -->
     <div class="tab-content" id="tab-patterns">
-      <div class="sec-label">Build a Color Sequence</div>
+      <div class="sec-label">Chase Style</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+          Choose how colors move. Chase modes use the hardware effect — colors ride the strip up or down.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;" id="chaseStyleBtns"></div>
+      </div>
+
+      <div class="sec-label">Color Sequence</div>
       <div class="card">
         <div class="pat-colors" id="patColors">
           <span class="empty-hint">Add colors below then hit Play</span>
@@ -343,7 +351,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
         </div>
       </div>
 
-      <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play Sequence</button>
+      <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play</button>
       <button class="btn-clear" onclick="clearSequence()">Clear Sequence</button>
 
       <div class="sec-label" style="margin-top:16px;">Presets</div>
@@ -729,7 +737,35 @@ const PRESETS = [
   {name:'💜 Purple Haze',colors:['#8800ff','#ff00aa','#0000ff'],  dur:400},
 ];
 
+// ── Chase styles ─────────────────────────────────────────────────────────────
+const CHASE_STYLES = [
+  {name:'Solid Swap',   icon:'⬛', mode:null, hint:'Full strip swaps color'},
+  {name:'Running Up',   icon:'⬆️', mode:30,   hint:'Light runs up the strip'},
+  {name:'Running Down', icon:'⬇️', mode:31,   hint:'Light runs down the strip'},
+  {name:'Comet Up',     icon:'☄️', mode:25,   hint:'Comet trails upward'},
+  {name:'Meteor',       icon:'🌠', mode:38,   hint:'Meteor shower effect'},
+  {name:'Theater',      icon:'🎭', mode:43,   hint:'Theater chase style'},
+];
+let chaseStyle = CHASE_STYLES[0]; // default: solid swap
+
 let sequence=[], patTimer=null, patPlaying=false, patIdx=0;
+
+function buildChaseStyles() {
+  const g=document.getElementById('chaseStyleBtns');
+  CHASE_STYLES.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='order-btn'+(s===chaseStyle?' active':'');
+    btn.innerHTML=`<div style="font-size:16px;">${s.icon}</div><div style="font-size:11px;font-weight:700;margin-top:2px;">${s.name}</div><div style="font-size:9px;color:var(--text2);margin-top:1px;">${s.hint}</div>`;
+    btn.style.padding='8px 6px';btn.style.lineHeight='1.2';btn.style.height='auto';
+    btn.onclick=()=>{
+      chaseStyle=s;
+      g.querySelectorAll('.order-btn').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      toast(s.name+' selected');
+    };
+    g.appendChild(btn);
+  });
+}
 
 function buildPresets() {
   const c=document.getElementById('presets');
@@ -785,12 +821,17 @@ function togglePattern() {
   patPlaying ? stopPattern() : startPattern();
 }
 
-function startPattern() {
+async function startPattern() {
   if(!sequence.length){ toast('Add at least one color first'); return; }
-  stopPattern(); // clear any existing timer first
+  stopPattern();
   patPlaying=true; patIdx=0;
   document.getElementById('playBtn').textContent='⏹ Stop';
   document.getElementById('playBtn').className='play-btn playing';
+  // if a chase mode is selected, set it on the hardware first
+  if(chaseStyle.mode !== null) {
+    await send(0,0,chaseStyle.mode, CMD.MODE);
+    await new Promise(r=>setTimeout(r,200)); // let hardware settle
+  }
   runPatternStep();
 }
 
@@ -872,6 +913,7 @@ function toast(msg,ms=1800) {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 buildQuickColors();
 buildEffects();
+buildChaseStyles();
 buildPresets();
 buildOrderBtns();
 onDur();
