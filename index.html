@@ -372,7 +372,10 @@ input:checked+.tslider::before{transform:translateX(23px);}
       <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play</button>
       <button class="btn-clear" onclick="clearSequence()">Clear Sequence</button>
 
-      <div class="sec-label" style="margin-top:16px;">Presets</div>
+      <div class="sec-label" style="margin-top:16px;">Stacked Chase Presets</div>
+      <div id="stackedPresets"></div>
+
+      <div class="sec-label" style="margin-top:16px;">Color Cycle Presets</div>
       <div id="presets"></div>
     </div>
 
@@ -410,21 +413,6 @@ input:checked+.tslider::before{transform:translateX(23px);}
         <div class="order-grid" id="orderGrid"></div>
       </div>
 
-      <div class="sec-label">Lab — Stacked Colors</div>
-      <div class="card">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;">
-          Finding 3rd color slot. Test C showed 2 colors (R+W) — now probing for blue slot.
-        </div>
-        <div style="display:grid;gap:8px;">
-          <button class="tbtn" onclick="labTest1()" style="padding:11px;font-size:12px;">Test A — 0x0C=Red · 0x0D=White · 0x0E=Blue → Mode 43</button>
-          <button class="tbtn" onclick="labTest2()" style="padding:11px;font-size:12px;">Test B — 0x0C=Red · 0x0D=Blue · 0x0F=White → Mode 43</button>
-          <button class="tbtn" onclick="labTest3()" style="padding:11px;font-size:12px;">Test C — 0x0C=Red · 0x0D=White · 0x0F=Blue → Mode 43</button>
-          <button class="tbtn" onclick="labTest4()" style="padding:11px;font-size:12px;">Test D — 0x10=Red · 0x11=White · 0x12=Blue → Mode 43</button>
-          <button class="tbtn" onclick="labTest5()" style="padding:11px;font-size:12px;">Test E — 0x0C + 0x0D + 0x0E → Mode 33 (Three Colors)</button>
-          <button class="tbtn" onclick="labTest6()" style="padding:11px;font-size:12px;">Test F — 0x0C=Red · 0x0D=White · 0x0E=Blue → Mode 43 slow speed</button>
-          <button class="tbtn" onclick="labStopLoop()" style="padding:11px;font-size:12px;background:var(--danger);color:#fff;">⏹ Stop Loop</button>
-        </div>
-      </div>
 
       <div class="sec-label">About</div>
       <div class="card">
@@ -500,7 +488,7 @@ function disconnect() {
   setConn(false);
 }
 
-function onDrop() { setConn(false); toast('Disconnected'); }
+function onDrop() { setConn(false); stopPattern(); stopStacked(); toast('Disconnected'); }
 
 function setConn(state, name='') {
   connected = state;
@@ -965,70 +953,70 @@ function onPower() {
   toast(on?'Lights On':'Lights Off');
 }
 
-// ─── LAB TESTS ────────────────────────────────────────────────────────────────
-let labLoopTimer=null, labLoopRunning=false;
+// ─── STACKED CHASE PRESETS ────────────────────────────────────────────────────
+const STACKED_PRESETS = [
+  {name:'🇺🇸 Patriotic Stack', pairs:[[[255,0,0],[255,255,255]],[[255,255,255],[0,0,255]],[[0,0,255],[255,0,0]]]},
+  {name:'🚨 Police Stack',     pairs:[[[255,0,0],[0,0,255]],[[0,0,255],[255,0,0]]]},
+  {name:'🎃 Halloween Stack',  pairs:[[[255,100,0],[128,0,200]],[[128,0,200],[255,100,0]]]},
+  {name:'🎄 Christmas Stack',  pairs:[[[255,0,0],[0,180,0]],[[0,180,0],[255,0,0]]]},
+  {name:'🔥 Fire Stack',       pairs:[[[255,0,0],[255,80,0]],[[255,80,0],[255,180,0]],[[255,180,0],[255,0,0]]]},
+  {name:'🩵 Ice & Fire Stack', pairs:[[[255,30,0],[0,120,255]],[[0,120,255],[255,30,0]]]},
+];
 
-async function setSlot(cmd, r, g, b) {
-  const [b1,b2,b3] = reorder(r,g,b);
-  await send(b1,b2,b3, cmd);
-}
-function labStopLoop() {
-  labLoopRunning=false;
-  clearTimeout(labLoopTimer);
-  toast('Loop stopped');
+function buildStackedPresets() {
+  const c=document.getElementById('stackedPresets');
+  STACKED_PRESETS.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='preset-card';
+    el.id='stacked-'+i;
+    const dots=p.pairs[0].map(rgb=>`<div class="preset-dot" style="background:rgb(${rgb.join(',')})"></div>`).join('');
+    el.innerHTML=`<div class="preset-name">${p.name}</div><div class="preset-dots">${dots}</div><div style="font-size:18px;color:var(--accent);">▶</div>`;
+    el.onclick=()=>{
+      document.querySelectorAll('.preset-card').forEach(x=>x.style.borderColor='');
+      el.style.borderColor=getComputedStyle(document.documentElement).getPropertyValue('--accent');
+      playStacked(p.pairs);
+      toast(p.name+' playing');
+    };
+    c.appendChild(el);
+  });
 }
 
-// Known working: 0x0C=slot1, 0x0D=slot2 → mode 43 shows 2 colors
-// Now probing for slot 3
-async function labTest1() {
-  labStopLoop();
-  toast('Test A: 0x0C/0D/0E → mode 43', 3000);
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 255,255,255);
-  await setSlot(0x0E, 0,0,255);
-  setTimeout(()=>sendMode(43), 200);
+// ─── STACKED CHASE ────────────────────────────────────────────────────────────
+// Confirmed safe commands: 0x0C = color slot 1, 0x0D = color slot 2
+// Mode 43 (Theater Chase) scrolls these 2 color bands down the strip
+
+let stackedTimer=null, stackedRunning=false;
+
+async function setSlot1(r,g,b) {
+  const [b1,b2,b3]=reorder(r,g,b);
+  await send(b1,b2,b3, 0x0C);
 }
-async function labTest2() {
-  labStopLoop();
-  toast('Test B: 0x0C/0D/0F → mode 43', 3000);
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 0,0,255);
-  await setSlot(0x0F, 255,255,255);
-  setTimeout(()=>sendMode(43), 200);
+async function setSlot2(r,g,b) {
+  const [b1,b2,b3]=reorder(r,g,b);
+  await send(b1,b2,b3, 0x0D);
 }
-async function labTest3() {
-  labStopLoop();
-  toast('Test C: 0x0C/0D/0F → mode 43', 3000);
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 255,255,255);
-  await setSlot(0x0F, 0,0,255);
-  setTimeout(()=>sendMode(43), 200);
+
+function stopStacked() {
+  stackedRunning=false;
+  clearTimeout(stackedTimer);
 }
-async function labTest4() {
-  labStopLoop();
-  toast('Test D: 0x10/11/12 → mode 43', 3000);
-  await setSlot(0x10, 255,0,0);
-  await setSlot(0x11, 255,255,255);
-  await setSlot(0x12, 0,0,255);
-  setTimeout(()=>sendMode(43), 200);
+
+// Cycle through color pairs so all 3 colors appear over time
+async function runStackedStep(pairs, idx) {
+  if(!stackedRunning) return;
+  const [c1, c2] = pairs[idx % pairs.length];
+  await setSlot1(...c1);
+  await setSlot2(...c2);
+  setTimeout(()=>sendMode(43), 80);
+  stackedTimer = setTimeout(()=>runStackedStep(pairs, idx+1),
+    Math.max(2500, +document.getElementById('durSlider').value));
 }
-async function labTest5() {
-  labStopLoop();
-  toast('Test E: 0x0C/0D/0E → mode 33 (Three Colors)', 3000);
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 255,255,255);
-  await setSlot(0x0E, 0,0,255);
-  setTimeout(()=>sendMode(33), 200);
-}
-async function labTest6() {
-  labStopLoop();
-  toast('Test F: slow speed then 0x0C/0D/0E → mode 43', 3000);
-  sendFast(10,0,0, CMD.SPEED); // slow it way down to see bands clearly
-  await new Promise(r=>setTimeout(r,200));
-  await setSlot(0x0C, 255,0,0);
-  await setSlot(0x0D, 255,255,255);
-  await setSlot(0x0E, 0,0,255);
-  setTimeout(()=>sendMode(43), 200);
+
+async function playStacked(pairs) {
+  stopPattern();
+  stopStacked();
+  stackedRunning=true;
+  runStackedStep(pairs, 0);
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
@@ -1052,6 +1040,7 @@ function toast(msg,ms=1800) {
 buildQuickColors();
 buildEffects();
 buildChaseStyles();
+buildStackedPresets();
 buildPresets();
 buildOrderBtns();
 onDur();
