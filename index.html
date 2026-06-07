@@ -489,16 +489,10 @@ function setConn(state, name='') {
 }
 
 function setControlsEnabled(on) {
-  // disable/enable everything inside .content except the connect button
-  document.querySelectorAll(
-    '.content input, .content button, .content select'
-  ).forEach(el => {
-    el.disabled = !on;
-    el.style.opacity = on ? '' : '0.35';
-    el.style.pointerEvents = on ? '' : 'none';
-  });
-  // dim the tab content visually when disconnected
-  document.getElementById('mainContent').style.filter = on ? '' : 'grayscale(0.4)';
+  const content = document.getElementById('mainContent');
+  content.style.pointerEvents = on ? '' : 'none';
+  content.style.opacity      = on ? '' : '0.4';
+  content.style.filter       = on ? '' : 'grayscale(0.5)';
 }
 
 async function send(b1,b2,b3,cmd) {
