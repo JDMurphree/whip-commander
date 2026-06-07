@@ -327,17 +327,6 @@ input:checked+.tslider::before{transform:translateX(23px);}
 
     <!-- ══ PATTERNS tab ══ -->
     <div class="tab-content" id="tab-patterns">
-      <div class="sec-label">Chase Style</div>
-      <div class="card">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6;">
-          <strong style="color:var(--text);">How to get a chase:</strong> Go to the
-          <strong style="color:var(--accent);">Effects tab</strong> first and pick a chase effect
-          (Running Up, Comet, etc.). Then come back here and play a color sequence —
-          the colors will cycle through that chase effect.
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;" id="chaseStyleBtns"></div>
-      </div>
-
       <div class="sec-label">Color Sequence</div>
       <div class="card">
         <div class="pat-colors" id="patColors">
@@ -793,22 +782,30 @@ function buildPresets() {
   PRESETS.forEach((p,i)=>{
     const el=document.createElement('div');
     el.className='preset-card';
+    el.id='preset-'+i;
     el.innerHTML=`
       <div class="preset-name">${p.name}</div>
       <div class="preset-dots">${p.colors.map(col=>`<div class="preset-dot" style="background:${col}"></div>`).join('')}</div>
-      <button class="preset-load" onclick="loadPreset(${i})">Load</button>
+      <div style="font-size:18px;color:var(--accent);">▶</div>
     `;
+    el.onclick=()=>playPreset(i);
     c.appendChild(el);
   });
 }
 
-function loadPreset(i) {
+function playPreset(i) {
   const p=PRESETS[i];
   sequence=p.colors.map(hex=>({hex}));
   document.getElementById('durSlider').value=p.dur;
   onDur();
   renderSeq();
-  toast('Preset loaded — tap Play!');
+  // highlight active preset
+  document.querySelectorAll('.preset-card').forEach(x=>x.style.borderColor='');
+  const card=document.getElementById('preset-'+i);
+  if(card) card.style.borderColor=getComputedStyle(document.documentElement).getPropertyValue('--accent');
+  // start playing immediately
+  startPattern();
+  toast(p.name+' playing');
 }
 
 function addColor() {
@@ -929,7 +926,6 @@ function toast(msg,ms=1800) {
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 buildQuickColors();
 buildEffects();
-buildChaseStyles();
 buildPresets();
 buildOrderBtns();
 onDur();
