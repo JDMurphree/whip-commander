@@ -529,10 +529,12 @@ function onColorInput() {
   colorTimer=setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); },40);
 }
 
+let brightTimer=null;
 function onBright() {
   const v=+document.getElementById('brightSlider').value;
   document.getElementById('brightVal').textContent=v;
-  send(0,0,v, CMD.BRIGHT);
+  clearTimeout(brightTimer);
+  brightTimer=setTimeout(()=>sendFast(0,0,v,CMD.BRIGHT), 80);
 }
 
 // ─── EFFECTS ──────────────────────────────────────────────────────────────────
@@ -602,10 +604,12 @@ function renderFx() {
   });
 }
 
+let speedTimer=null;
 function onSpeed() {
   const v=+document.getElementById('speedSlider').value;
   document.getElementById('speedVal').textContent=v;
-  send(0,0,v, CMD.SPEED);
+  clearTimeout(speedTimer);
+  speedTimer=setTimeout(()=>sendFast(0,0,v,CMD.SPEED), 80);
 }
 
 function nudgeMode(delta) {
