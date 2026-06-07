@@ -347,6 +347,16 @@ input:checked+.tslider::before{transform:translateX(23px);}
         </div>
       </div>
 
+      <div class="sec-label">Recovery</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+          If lights are stuck or not responding, tap this to restore full brightness and reconnect.
+        </div>
+        <button onclick="hardReset()" style="width:100%;padding:13px;border-radius:10px;background:var(--danger);border:none;color:#fff;font-size:14px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;">
+          ⚡ Hard Reset
+        </button>
+      </div>
+
       <div class="sec-label">Color Channel Order</div>
       <div class="card">
         <div style="font-size:11px;color:var(--text2);line-height:1.5;">
@@ -415,6 +425,9 @@ async function connect() {
     bleChar    = await svc.getCharacteristic(CHAR);
     setConn(true, bleDevice.name || 'Rhino Lights');
     toast('Connected!');
+    // restore full brightness and current color on every connect
+    setTimeout(()=>{ sendFast(0,0,255,CMD.BRIGHT); }, 300);
+    setTimeout(()=>{ sendColor(document.getElementById('colorPicker').value); }, 600);
   } catch(e) {
     if (e.name !== 'NotFoundError') toast('Error: '+e.message, 3000);
     setConn(false);
@@ -748,6 +761,18 @@ function buildOrderBtns() {
     };
     g.appendChild(b);
   });
+}
+
+async function hardReset() {
+  toast('Resetting…', 3000);
+  // disconnect and reconnect fresh
+  if (bleDevice?.gatt.connected) bleDevice.gatt.disconnect();
+  setConn(false);
+  await new Promise(r=>setTimeout(r,800));
+  await connect();
+  // then blast full brightness multiple times to break through stuck state
+  [400,700,1100].forEach(ms=>setTimeout(()=>sendFast(0,0,255,CMD.BRIGHT),ms));
+  [600,900,1300].forEach(ms=>setTimeout(()=>sendColor(document.getElementById('colorPicker').value),ms));
 }
 
 function onPower() {
