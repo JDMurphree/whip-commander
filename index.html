@@ -272,6 +272,7 @@ input:checked+.tslider::before{transform:translateX(23px);}
   <!-- Header -->
   <div class="header">
     <div class="logo">⚡ Whip Commander</div>
+    <span id="modeBadge" style="display:none;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:#0066cc;color:#fff;letter-spacing:.5px;">WiFi</span>
     <button class="conn-btn off" id="connBtn" onclick="toggleConnect()">Connect</button>
   </div>
 
@@ -287,6 +288,18 @@ input:checked+.tslider::before{transform:translateX(23px);}
       <div class="disco-icon">📡</div>
       <div class="disco-msg">Not Connected</div>
       <div class="disco-hint">Tap Connect above to pair your Rhino Lights</div>
+      <div style="margin-top:18px;width:100%;padding:0 28px;">
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-bottom:8px;letter-spacing:.5px;">── OR CONNECT TO WLED WiFi ──</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="wledIpInput" value="4.3.2.1" placeholder="WLED IP"
+            style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid #0055aa;color:var(--text);font-size:13px;text-align:center;">
+          <button onclick="wledConnect()"
+            style="padding:10px 16px;border-radius:8px;background:#0055aa;border:none;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">
+            WiFi
+          </button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px;">Join WLED hotspot first, then tap WiFi</div>
+      </div>
     </div>
 
   <!-- Main content -->
@@ -372,6 +385,30 @@ input:checked+.tslider::before{transform:translateX(23px);}
       <button class="play-btn idle" id="playBtn" onclick="togglePattern()">▶ Play</button>
       <button class="btn-clear" onclick="clearSequence()">Clear Sequence</button>
 
+      <!-- WLED Patriotic — shown only when WiFi connected -->
+      <div id="wledPatSection" style="display:none;">
+        <div class="sec-label" style="margin-top:16px;color:#66aaff;">WLED Live Effects</div>
+        <div class="card" style="background:rgba(0,40,100,.25);border-color:#0055aa;">
+          <div style="font-size:14px;font-weight:900;color:#88bbff;margin-bottom:4px;">🇺🇸 Patriotic Barber-Pole</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.5;">
+            True simultaneous red, white &amp; blue bands scrolling up the strip — only possible with WLED.
+          </div>
+          <div class="slider-row" style="margin-bottom:10px;">
+            <span class="slider-label">Band Size</span>
+            <input type="range" id="wledBandSlider" min="3" max="30" value="10"
+              oninput="document.getElementById('wledBandVal').textContent=this.value+'px'">
+            <span class="slider-val" id="wledBandVal">10px</span>
+          </div>
+          <div class="slider-row" style="margin-bottom:14px;">
+            <span class="slider-label">Speed</span>
+            <input type="range" id="wledAnimSpeed" min="40" max="500" value="120" step="10"
+              oninput="document.getElementById('wledSpeedVal').textContent=this.value+'ms'">
+            <span class="slider-val" id="wledSpeedVal">120ms</span>
+          </div>
+          <button onclick="toggleWledPatriotic()" id="wledPatBtn" class="play-btn idle" style="margin-bottom:0;">▶ Start Patriotic</button>
+        </div>
+      </div>
+
       <div class="sec-label" style="margin-top:16px;">Presets</div>
       <div id="presets"></div>
     </div>
@@ -412,13 +449,38 @@ input:checked+.tslider::before{transform:translateX(23px);}
 
 
 
+      <div class="sec-label">WLED Controller (WiFi)</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;">
+          Configure your WLED board. Join the WLED WiFi hotspot, then connect from the main screen.
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">IP Address</div>
+            <div class="setting-sub">Default when on WLED hotspot: 4.3.2.1</div>
+          </div>
+        </div>
+        <input type="text" id="wledIpSettings" value="4.3.2.1" placeholder="e.g. 4.3.2.1"
+          style="width:100%;padding:10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;margin-top:6px;margin-bottom:10px;"
+          oninput="document.getElementById('wledIpInput').value=this.value">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">LED Count</div>
+            <div class="setting-sub">Total pixels per whip strip</div>
+          </div>
+          <input type="number" id="wledPixelSettings" value="60" min="10" max="500"
+            style="width:70px;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;text-align:center;"
+            onchange="wledPixelCount=+this.value">
+        </div>
+      </div>
+
       <div class="sec-label">About</div>
       <div class="card">
         <div style="font-size:12px;color:var(--text2);line-height:1.7;">
-          Whip Commander v1.0<br>
-          For SP107E / Rhino Lights BLE controllers<br>
-          Requires Chrome on Android (Web Bluetooth)<br>
-          Open at <strong style="color:var(--text);">localhost/JDM3/whip-controller</strong>
+          Whip Commander v2.0<br>
+          BLE: SP107E / Rhino Lights (Chrome Android)<br>
+          WiFi: WLED controllers (GLEDOPTO, Athom, etc.)<br>
+          <strong style="color:var(--accent);">jdmurphree.github.io/whip-commander</strong>
         </div>
       </div>
     </div>
@@ -446,6 +508,91 @@ input:checked+.tslider::before{transform:translateX(23px);}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── WLED ─────────────────────────────────────────────────────────────────────
+let wledMode = false, wledConnected = false;
+let wledIP = '4.3.2.1', wledPixelCount = 60;
+let wledAnimOffset = 0, wledAnimTimer = null, wledAnimPlaying = false;
+const WLED_PAT_COLORS = ['#ff0000','#ffffff','#0033cc'];
+
+async function wledPost(payload) {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(()=>ctrl.abort(), 3000);
+    const r = await fetch(`http://${wledIP}/json/state`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload), signal:ctrl.signal
+    });
+    clearTimeout(tid);
+    return r.ok;
+  } catch(e) { return false; }
+}
+
+async function wledConnect() {
+  const ip = document.getElementById('wledIpInput').value.trim() || '4.3.2.1';
+  wledIP = ip;
+  toast('Connecting to WLED…');
+  try {
+    const ctrl = new AbortController();
+    setTimeout(()=>ctrl.abort(), 4000);
+    const r = await fetch(`http://${wledIP}/json/info`,{signal:ctrl.signal});
+    if (!r.ok) throw new Error();
+    const info = await r.json();
+    wledMode = true; wledConnected = true;
+    // configure segment to cover all pixels
+    await wledPost({on:true, bri:255, seg:[{start:0, stop:wledPixelCount, fx:0}]});
+    setConn(true, (info.name||'WLED')+' · WiFi');
+    document.getElementById('wledPatSection').style.display='block';
+    document.getElementById('modeBadge').style.display='inline-block';
+    toast('WLED connected! 🎉');
+  } catch(e) {
+    toast('Cannot reach WLED at '+wledIP, 3000);
+  }
+}
+
+function wledDisconnect() {
+  stopWledAnim();
+  wledMode=false; wledConnected=false;
+  document.getElementById('wledPatSection').style.display='none';
+  document.getElementById('modeBadge').style.display='none';
+}
+
+function buildWledFrame(pixelCount, bandSize, colors, offset) {
+  const cycle = bandSize * colors.length;
+  const pixels = [];
+  for (let p=0; p<pixelCount; p++) {
+    const pos = ((p+offset)%cycle+cycle)%cycle;
+    pixels.push(colors[Math.floor(pos/bandSize)%colors.length].slice(1));
+  }
+  return pixels;
+}
+
+async function wledAnimStep() {
+  if (!wledAnimPlaying) return;
+  const bandSize = +(document.getElementById('wledBandSlider')||{value:10}).value;
+  const speed    = +(document.getElementById('wledAnimSpeed')||{value:120}).value;
+  const pixels   = buildWledFrame(wledPixelCount, bandSize, WLED_PAT_COLORS, wledAnimOffset);
+  await wledPost({seg:[{fx:0, i:pixels}]});
+  wledAnimOffset = (wledAnimOffset+1) % (bandSize * WLED_PAT_COLORS.length);
+  if (wledAnimPlaying) wledAnimTimer = setTimeout(wledAnimStep, speed);
+}
+
+function startWledAnim() {
+  wledAnimPlaying=true; wledAnimOffset=0;
+  const btn=document.getElementById('wledPatBtn');
+  if(btn){btn.textContent='⏹ Stop Patriotic';btn.className='play-btn playing';}
+  wledAnimStep();
+}
+
+function stopWledAnim() {
+  wledAnimPlaying=false; clearTimeout(wledAnimTimer);
+  const btn=document.getElementById('wledPatBtn');
+  if(btn){btn.textContent='▶ Start Patriotic';btn.className='play-btn idle';}
+}
+
+function toggleWledPatriotic() {
+  wledAnimPlaying ? stopWledAnim() : startWledAnim();
+}
+
 // ─── BLE ──────────────────────────────────────────────────────────────────────
 const SVC  = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHAR = '0000ffe1-0000-1000-8000-00805f9b34fb';
@@ -454,7 +601,9 @@ const CMD  = { ON:0xAA, OFF:0xBB, COLOR:0x0C, MODE:0x08, SPEED:0x09, BRIGHT:0x0A
 let bleDevice=null, bleChar=null, connected=false;
 
 async function toggleConnect() {
-  connected ? disconnect() : await connect();
+  if (wledConnected) { wledDisconnect(); setConn(false); }
+  else if (connected) { disconnect(); }
+  else { await connect(); }
 }
 
 async function connect() {
@@ -490,7 +639,7 @@ function onDrop() { setConn(false); stopPattern(); toast('Disconnected'); }
 
 function setConn(state, name='') {
   connected = state;
-  bleChar   = state ? bleChar : null;
+  if (!state) { bleChar=null; if(!wledConnected) wledDisconnect(); stopPattern(); }
   const btn = document.getElementById('connBtn');
   const dot = document.getElementById('dot');
   const txt = document.getElementById('statusTxt');
@@ -500,8 +649,6 @@ function setConn(state, name='') {
   } else {
     btn.textContent='Connect'; btn.className='conn-btn off';
     dot.className='dot'; txt.textContent='Not connected — tap Connect';
-    bleChar=null;
-    stopPattern();
   }
   setControlsEnabled(state);
 }
@@ -556,6 +703,11 @@ function hexRgb(hex) {
 }
 
 function sendColor(hex) {
+  if (wledMode) {
+    const [r,g,b]=hexRgb(hex);
+    wledPost({seg:[{fx:0,col:[[r,g,b]]}]});
+    return;
+  }
   const [r,g,b] = hexRgb(hex);
   const [b1,b2,b3] = reorder(r,g,b);
   send(b1,b2,b3, CMD.COLOR);
@@ -605,14 +757,16 @@ let brightTimer=null;
 function onBright() {
   const pct=+document.getElementById('brightSlider').value;
   document.getElementById('brightVal').textContent=pct+'%';
-  const raw=Math.round(pct*2.55); // 0-100% → 0-255, value goes in byte 0
+  const raw=Math.round(pct*2.55);
   clearTimeout(brightTimer);
+  if (wledMode) { brightTimer=setTimeout(()=>wledPost({bri:raw}),80); return; }
   brightTimer=setTimeout(async ()=>{ await send(raw,0,0, CMD.BRIGHT); }, 80);
 }
 
 async function resetBrightness() {
   document.getElementById('brightSlider').value=100;
   document.getElementById('brightVal').textContent='100%';
+  if (wledMode) { await wledPost({bri:255}); toast('Brightness reset to full'); return; }
   await send(255,0,0, CMD.BRIGHT);
   toast('Brightness reset to full');
 }
@@ -727,6 +881,7 @@ function onSpeed() {
   const v=+document.getElementById('speedSlider').value;
   document.getElementById('speedVal').textContent=v;
   clearTimeout(speedTimer);
+  if (wledMode) { speedTimer=setTimeout(()=>wledPost({seg:[{sx:v}]}),80); return; }
   speedTimer=setTimeout(()=>sendFast(v,0,0,CMD.SPEED), 80);
 }
 
@@ -738,10 +893,15 @@ function selectEffect(mode, name, icon) {
   document.getElementById('modeNum').textContent=mode;
   const _hex = document.getElementById('colorPicker').value;
   const _gen = ++sendGeneration;
-  sendMode(mode);
-  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 60);
-  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 150);
-  setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 280);
+  if (wledMode) {
+    const [r,g,b]=hexRgb(_hex);
+    wledPost({seg:[{fx:mode, col:[[r,g,b]]}]});
+  } else {
+    sendMode(mode);
+    setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 60);
+    setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 150);
+    setTimeout(()=>{ if(sendGeneration===_gen) sendColor(_hex); }, 280);
+  }
   stopPattern();
   // If this mode is in the chase-style list, auto-select it for patterns too
   const csMatch = CHASE_STYLES.find(s=>s.mode===mode);
@@ -944,12 +1104,16 @@ function buildOrderBtns() {
 }
 
 async function hardReset() {
+  if (wledMode) {
+    toast('Resetting WLED…', 2000);
+    await wledPost({on:true, bri:255, seg:[{fx:0, col:[[255,255,255]]}]});
+    return;
+  }
   toast('Resetting…', 3000);
   if (bleDevice?.gatt.connected) bleDevice.gatt.disconnect();
   setConn(false);
   await new Promise(r=>setTimeout(r,800));
   await connect();
-  // send full brightness + color multiple times with awaited send()
   for (const ms of [500, 900, 1400]) {
     setTimeout(async ()=>{ await send(255,0,0, CMD.BRIGHT); }, ms);
   }
@@ -957,6 +1121,7 @@ async function hardReset() {
 
 function onPower() {
   const on=document.getElementById('powerChk').checked;
+  if (wledMode) { wledPost({on}); toast(on?'Lights On':'Lights Off'); return; }
   send(0,0,0, on?CMD.ON:CMD.OFF);
   toast(on?'Lights On':'Lights Off');
 }
