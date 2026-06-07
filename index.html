@@ -427,7 +427,7 @@ async function connect() {
     toast('Connected!');
     // restore full brightness and current color on every connect
     setTimeout(async ()=>{
-      await send(0,0,100, CMD.BRIGHT);
+      await send(0,0,255, CMD.BRIGHT);
       await new Promise(r=>setTimeout(r,150));
       sendColor(document.getElementById('colorPicker').value);
     }, 400);
@@ -548,11 +548,12 @@ function onColorInput() {
 
 let brightTimer=null;
 function onBright() {
-  const v=+document.getElementById('brightSlider').value;
-  document.getElementById('brightVal').textContent=v+'%';
+  const pct=+document.getElementById('brightSlider').value;
+  document.getElementById('brightVal').textContent=pct+'%';
+  const raw=Math.round(pct*2.55); // 0-100% → 0-255 for device
   clearTimeout(brightTimer);
   brightTimer=setTimeout(async ()=>{
-    await send(0,0,v, CMD.BRIGHT);
+    await send(0,0,raw, CMD.BRIGHT);
     await new Promise(r=>setTimeout(r,120));
     sendColor(document.getElementById('colorPicker').value);
   }, 80);
@@ -561,7 +562,7 @@ function onBright() {
 async function resetBrightness() {
   document.getElementById('brightSlider').value=100;
   document.getElementById('brightVal').textContent='100%';
-  await send(0,0,100, CMD.BRIGHT);
+  await send(0,0,255, CMD.BRIGHT);
   await new Promise(r=>setTimeout(r,120));
   sendColor(document.getElementById('colorPicker').value);
   toast('Brightness reset to full');
@@ -776,7 +777,7 @@ async function hardReset() {
   // send full brightness + color multiple times with awaited send()
   for (const ms of [500, 900, 1400]) {
     setTimeout(async ()=>{
-      await send(0,0,100, CMD.BRIGHT);
+      await send(0,0,255, CMD.BRIGHT);
       await new Promise(r=>setTimeout(r,120));
       sendColor(document.getElementById('colorPicker').value);
     }, ms);
