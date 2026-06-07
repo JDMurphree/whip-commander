@@ -243,6 +243,8 @@ input:checked+.tslider::before{transform:translateX(23px);}
 .toast.show{opacity:1;}
 
 /* ── Utility ── */
+.tbtn{padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer;width:100%;}
+.tbtn:active{background:var(--accent);color:#fff;}
 .btn-clear{
   width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);
   background:transparent;color:var(--text2);font-size:13px;font-weight:700;
@@ -281,14 +283,27 @@ input:checked+.tslider::before{transform:translateX(23px);}
           <span class="slider-val" id="brightVal">100%</span>
           <button onclick="resetBrightness()" style="margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:11px;font-weight:700;cursor:pointer;">MAX</button>
         </div>
-        <div style="margin-top:12px;">
-          <div style="font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Brightness Calibration — tap each, tell me which is brightest:</div>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
-            <button onclick="testBright(0)"   style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">0</button>
-            <button onclick="testBright(25)"  style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">25</button>
-            <button onclick="testBright(50)"  style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">50</button>
-            <button onclick="testBright(100)" style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">100</button>
-            <button onclick="testBright(255)" style="padding:8px 4px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">255</button>
+        <div style="margin-top:14px;">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Step 1 — Value test (byte pos 2):</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px;">
+            <button onclick="testBright(0,2)"   class="tbtn">0</button>
+            <button onclick="testBright(25,2)"  class="tbtn">25</button>
+            <button onclick="testBright(50,2)"  class="tbtn">50</button>
+            <button onclick="testBright(100,2)" class="tbtn">100</button>
+            <button onclick="testBright(255,2)" class="tbtn">255</button>
+          </div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Step 2 — Byte position test (value=255):</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
+            <button onclick="testBright(255,0)" class="tbtn">[255,0,0]</button>
+            <button onclick="testBright(255,1)" class="tbtn">[0,255,0]</button>
+            <button onclick="testBright(255,2)" class="tbtn">[0,0,255]</button>
+          </div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Step 3 — Command byte test (value=255 pos 2):</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            <button onclick="testCmd(0x0A)" class="tbtn">0x0A</button>
+            <button onclick="testCmd(0x0B)" class="tbtn">0x0B</button>
+            <button onclick="testCmd(0x0E)" class="tbtn">0x0E</button>
+            <button onclick="testCmd(0x23)" class="tbtn">0x23</button>
           </div>
         </div>
       </div>
@@ -586,11 +601,16 @@ function onBright() {
   }, 80);
 }
 
-async function testBright(val) {
-  toast('Sending brightness = '+val);
-  await send(0,0,val, CMD.BRIGHT);
-  await new Promise(r=>setTimeout(r,120));
-  sendColor(document.getElementById('colorPicker').value);
+async function testBright(val, pos) {
+  const p=[0,0,0]; p[pos]=val;
+  toast(`[${p[0]},${p[1]},${p[2]}, 0x0A]`);
+  await send(p[0],p[1],p[2], CMD.BRIGHT);
+  // NO color re-send — we want to see exactly what brightness cmd does alone
+}
+
+async function testCmd(cmd) {
+  toast(`[0,0,255, 0x${cmd.toString(16).toUpperCase()}]`);
+  await send(0,0,255, cmd);
 }
 
 async function resetBrightness() {
