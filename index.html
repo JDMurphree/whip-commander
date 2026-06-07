@@ -329,8 +329,11 @@ input:checked+.tslider::before{transform:translateX(23px);}
     <div class="tab-content" id="tab-patterns">
       <div class="sec-label">Chase Style</div>
       <div class="card">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
-          Choose how colors move. Chase modes use the hardware effect — colors ride the strip up or down.
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6;">
+          <strong style="color:var(--text);">How to get a chase:</strong> Go to the
+          <strong style="color:var(--accent);">Effects tab</strong> first and pick a chase effect
+          (Running Up, Comet, etc.). Then come back here and play a color sequence —
+          the colors will cycle through that chase effect.
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;" id="chaseStyleBtns"></div>
       </div>
@@ -478,9 +481,24 @@ function setConn(state, name='') {
     dot.className='dot live'; txt.textContent=name;
   } else {
     btn.textContent='Connect'; btn.className='conn-btn off';
-    dot.className='dot'; txt.textContent='Not connected';
+    dot.className='dot'; txt.textContent='Not connected — tap Connect';
     bleChar=null;
+    stopPattern();
   }
+  setControlsEnabled(state);
+}
+
+function setControlsEnabled(on) {
+  // disable/enable everything inside .content except the connect button
+  document.querySelectorAll(
+    '.content input, .content button, .content select'
+  ).forEach(el => {
+    el.disabled = !on;
+    el.style.opacity = on ? '' : '0.35';
+    el.style.pointerEvents = on ? '' : 'none';
+  });
+  // dim the tab content visually when disconnected
+  document.getElementById('mainContent').style.filter = on ? '' : 'grayscale(0.4)';
 }
 
 async function send(b1,b2,b3,cmd) {
@@ -830,17 +848,12 @@ function togglePattern() {
   patPlaying ? stopPattern() : startPattern();
 }
 
-async function startPattern() {
+function startPattern() {
   if(!sequence.length){ toast('Add at least one color first'); return; }
   stopPattern();
   patPlaying=true; patIdx=0;
   document.getElementById('playBtn').textContent='⏹ Stop';
   document.getElementById('playBtn').className='play-btn playing';
-  // if a chase mode is selected, set it on the hardware first
-  if(chaseStyle.mode !== null) {
-    await send(0,0,chaseStyle.mode, CMD.MODE);
-    await new Promise(r=>setTimeout(r,200)); // let hardware settle
-  }
   runPatternStep();
 }
 
@@ -926,6 +939,7 @@ buildChaseStyles();
 buildPresets();
 buildOrderBtns();
 onDur();
+setControlsEnabled(false); // start disabled until connected
 </script>
 </body>
 </html>
