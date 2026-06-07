@@ -872,6 +872,7 @@ async function runPatternStep() {
   const [r,g,b] = hexRgb(col.hex);
   const [b1,b2,b3] = reorder(r,g,b);
   await send(b1,b2,b3, CMD.COLOR);
+  if(!patPlaying) return; // re-check after await — stop is immediate
   patIdx++;
   const dur = Math.max(300, +document.getElementById('durSlider').value);
   patTimer = setTimeout(runPatternStep, dur);
