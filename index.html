@@ -513,7 +513,7 @@ async function send(b1,b2,b3,cmd) {
   } catch(e) { console.error('BLE write:',e); }
 }
 
-// Fire-and-forget version for pattern use — never blocks the UI
+// Fire-and-forget — for commands that don't need acknowledgment (mode, speed)
 function sendFast(b1,b2,b3,cmd) {
   if (!bleChar) return;
   const data = new Uint8Array([b1,b2,b3,cmd]);
@@ -524,6 +524,8 @@ function sendFast(b1,b2,b3,cmd) {
       bleChar.writeValue(data).catch(()=>{});
   } catch(e) {}
 }
+
+function sendMode(mode) { sendFast(mode,0,0, CMD.MODE); }
 
 // ─── COLOR ORDER ──────────────────────────────────────────────────────────────
 let colorOrder = 'GRB'; // Rhino Lights default
@@ -714,7 +716,7 @@ function onSpeed() {
   const v=+document.getElementById('speedSlider').value;
   document.getElementById('speedVal').textContent=v;
   clearTimeout(speedTimer);
-  speedTimer=setTimeout(async ()=>{ await send(v,0,0,CMD.SPEED); }, 80);
+  speedTimer=setTimeout(()=>sendFast(v,0,0,CMD.SPEED), 80);
 }
 
 function selectEffect(mode, name, icon) {
@@ -723,7 +725,7 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  send(mode,0,0, CMD.MODE);
+  sendMode(mode);
   stopPattern();
   // update now-playing bar
   const bar=document.getElementById('fxNow');
@@ -735,7 +737,7 @@ function selectEffect(mode, name, icon) {
 function nudgeMode(delta) {
   manualMode=Math.max(0,Math.min(179,manualMode+delta));
   document.getElementById('modeNum').textContent=manualMode;
-  send(manualMode,0,0, CMD.MODE);
+  sendMode(manualMode);
   document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
   activeMode=manualMode;
   const bar=document.getElementById('fxNow');
