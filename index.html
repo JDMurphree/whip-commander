@@ -714,7 +714,7 @@ function onSpeed() {
   const v=+document.getElementById('speedSlider').value;
   document.getElementById('speedVal').textContent=v;
   clearTimeout(speedTimer);
-  speedTimer=setTimeout(()=>sendFast(0,0,v,CMD.SPEED), 80);
+  speedTimer=setTimeout(async ()=>{ await send(v,0,0,CMD.SPEED); }, 80);
 }
 
 function selectEffect(mode, name, icon) {
@@ -723,7 +723,7 @@ function selectEffect(mode, name, icon) {
   if(card) card.classList.add('active');
   activeMode=mode; manualMode=mode;
   document.getElementById('modeNum').textContent=mode;
-  send(0,0,mode, CMD.MODE);
+  send(mode,0,0, CMD.MODE);
   stopPattern();
   // update now-playing bar
   const bar=document.getElementById('fxNow');
@@ -735,7 +735,7 @@ function selectEffect(mode, name, icon) {
 function nudgeMode(delta) {
   manualMode=Math.max(0,Math.min(179,manualMode+delta));
   document.getElementById('modeNum').textContent=manualMode;
-  send(0,0,manualMode, CMD.MODE);
+  send(manualMode,0,0, CMD.MODE);
   document.querySelectorAll('.fx-card.active').forEach(x=>x.classList.remove('active'));
   activeMode=manualMode;
   const bar=document.getElementById('fxNow');
